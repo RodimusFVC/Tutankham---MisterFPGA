@@ -36,6 +36,9 @@
 		<part crc="bd06fad0" name="m4.4h"/>
 		<part crc="bf9fd9b0" name="m5.5h"/>
 		<part crc="fe079c5b" name="j6.6h"/>
+	</rom>
+
+	<rom index="1" zip="tutankhm.zip" md5="795dfe15407c5d4f7371aeabaee40e4e">
 		<part crc="7eb59b21" name="c1.1i"/>
 		<part crc="6615eff3" name="c2.2i"/>
 		<part crc="a10d4444" name="c3.3i"/>
@@ -47,7 +50,7 @@
 		<part crc="8ea9c6a6" name="c9.9i"/>
 	</rom>
 
-	<rom index="1" zip="tutankhm.zip" md5="795dfe15407c5d4f7371aeabaee40e4e">
+	<rom index="2" zip="tutankhm.zip" md5="795dfe15407c5d4f7371aeabaee40e4e">
 		<part crc="dabb609b" name="s1.7a"/>
 		<part crc="8ea9c6a6" name="s2.8a"/>
 	</rom>
