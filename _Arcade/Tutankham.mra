@@ -45,6 +45,7 @@
 		<part crc="afd0a81f" name="c7.7i"/>
 		<part crc="dabb609b" name="c8.8i"/>
 		<part crc="8ea9c6a6" name="c9.9i"/>
+	<rom index="1" zip="tutankhm.zip" md5="795dfe15407c5d4f7371aeabaee40e4e">
 		<part crc="dabb609b" name="s1.7a"/>
 		<part crc="8ea9c6a6" name="s2.8a"/>
 	</rom>
