@@ -30,7 +30,8 @@ module Tutankham
 	input                clk_49m,                  //Actual frequency: 49.152MHz
 	input          [1:0] coin,                     //0 = coin 1, 1 = coin 2
 	input          [1:0] start_buttons,            //0 = Player 1, 1 = Player 2
-	input          [3:0] p1_joystick, p2_joystick, //0 = up, 1 = down, 2 = left, 3 = right
+	input          [3:0] left_joystick,            //2 = left, 3 = right
+	input          [3:0] right_joystick,           //0 = up, 1 = down, 2 = left, 3 = right
 	input                p1_fire,
 	input                p2_fire,
 	input                btn_service,
@@ -166,19 +167,15 @@ Tutankham_SND sound_pcb
 	
 	.cs_controls_dip1(cs_controls_dip1),
 	.cs_dip2(cs_dip2),
-	.cs_dip3(cs_dip3),
 	.cpubrd_A5(A5),
 	.cpubrd_A6(A6),
 	.cpubrd_Din(cpubrd_D),	
 	.controls_dip(controls_dip),
-	.sound_l(sound_l),
-	.sound_r(sound_r),
+	.sound(sound),
 	
 	.underclock(underclock),
 	
-	.ep10_cs_i(ep10_cs_i),
-	.ep11_cs_i(ep11_cs_i),
-	.ep12_cs_i(ep12_cs_i),
+	.ep7_cs_i(ep7_cs_i),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_data(ioctl_data)

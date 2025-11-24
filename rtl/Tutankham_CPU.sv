@@ -42,16 +42,24 @@ module Tutankham_CPU
 	
 	//Screen centering (alters HSync, VSync and VBlank timing in the Konami 082 to reposition the video output)
 	input   [3:0] h_center, v_center,
-	
-	input         ep1_cs_i,
-	input         ep2_cs_i,
-	input         ep3_cs_i,
-	input         ep4_cs_i,
-	input         ep5_cs_i,
-	input         ep6_cs_i,
-	input         ep7_cs_i,
-	input         ep8_cs_i,
-	input         ep9_cs_i,
+										// Address - Konami / Stern / Bootleg
+										// CPU ROMs
+	input         ep1_cs_i,				// 0x0A000 - m1.1h  / m1.1h /  t1.1h
+	input         ep2_cs_i,				// 0x0B000 - m2.2h  / m2.2h /  t2.2h
+	input         ep3_cs_i,				// 0x0C000 - j3.3h  / a3.3h /  t3.3h
+	input         ep4_cs_i,				// 0x0D000 - m4.4h  / m4.4h /  t4.4h
+	input         ep5_cs_i,				// 0x0E000 - m5.5h  / m5.5h /  t5.5h
+	input         ep6_cs_i,				// 0x0F000 - j6.6h  / a6.6h /  t6.6h
+										// Graphics ROMs
+	input         ep7_cs_i,				// 0x10000 - c1.1i  / c1.1i /  t7.1i
+	input         ep8_cs_i,				// 0x11000 - c2.2i  / c2.2i /  t8.2i
+	input         ep9_cs_i,				// 0x12000 - c3.3i  / c3.3i /  t9.3i
+	input         ep10_cs_i,			// 0x13000 - c4.4i  / c4.4i / t10.4i
+	input         ep11_cs_i,			// 0x14000 - c5.5i  / c5.5i / t11.5i
+	input         ep12_cs_i,			// 0x15000 - c6.6i  / c6.6i / t12.6i
+	input         ep13_cs_i,			// 0x16000 - c7.7i  / c7.7i / t13.7i
+	input         ep14_cs_i,			// 0x17000 - c8.8i  / c8.8i / t14.8i
+	input         ep15_cs_i,			// 0x18000 - c9.9i  / c9.9i / t15.9i
 	input         cp_cs_i,
 	input         tl_cs_i,
 	input         sl_cs_i,
@@ -83,11 +91,11 @@ assign cs_dip2 = (~n_k501_enable & z80_A[14]) & (z80_A[8:7] == 2'b00) & n_ram_wr
 assign cs_dip3 = (~n_k501_enable & z80_A[14]) & (z80_A[8:7] == 2'b10) & n_ram_write;
 
 //Output primary MC6809E address lines A5 and A6 to sound board
-assign cpubrd_A5 = z80_A[5];
-assign cpubrd_A6 = z80_A[6];
+assign cpubrd_A5 = m6809_A[5];
+assign cpubrd_A6 = m6809_A[6];
 
 //Assign CPU board data output to sound board
-assign cpubrd_Dout = z80_Dout;
+assign cpubrd_Dout = m6809_Dout;
 
 //Generate and output chip select for latching sound data to sound CPU
 assign cs_sounddata = (~n_k501_enable & z80_A[14]) & (z80_A[8:7] == 2'b10) & ~n_ram_write;
@@ -113,81 +121,52 @@ always_ff @(posedge clk_49m) begin
 	div <= div + 5'd1;
 end
 wire cen_12m = !div[1:0];
-wire cen_6m = !div[2:0];
-wire cen_3m = !div[3:0];
+wire cen_6m  = !div[2:0];
+wire cen_3m  = !div[3:0];
 wire cen_1m5 = !div;
-
-//Generate E and Q clock enables for KONAMI-1 (code adapted from Sorgelig's phase generator used in the MiSTer Vectrex core)
-reg k1_E, k1_Q;
-always_ff @(posedge clk_49m) begin
-	reg [1:0] clk_phase = 0;
-	k1_E <= 0;
-	k1_Q <= 0;
-	if(cen_6m) begin
-		clk_phase <= clk_phase + 1'd1;
-		case(clk_phase)
-			2'b01: k1_Q <= 1;
-			2'b10: k1_E <= 1;
-		endcase
-	end
-end
 
 //------------------------------------------------------------ CPUs ------------------------------------------------------------//
 
-//Primary CPU - Zilog Z80 (uses T80s version of the T80 soft core)
-wire [15:0] z80_A;
-wire [7:0] z80_Dout;
-wire n_mreq, n_rd, n_rfsh;
-T80s u13G
+//Primary CPU - M6809
+wire [15:0] m6809_A;									// CPU M6809
+wire [7:0] m6809_Dout;									// Data Out
+wire m6809_rw;											// Single Read/Write Line (1=Read, 0=Write)
+wire m6809_ba, m6809_bs;								// Bus Available & Status Signals
+mc6809e u13G
 (
-	.RESET_n(reset),
-	.CLK(clk_49m),
-	.CEN(cen_3m & ~pause),
-	.NMI_n(z80_nmi),
-	.WAIT_n(n_wait),
-	.MREQ_n(n_mreq),
-	.RD_n(n_rd),
-	.RFSH_n(n_rfsh),
-	.A(z80_A),
-	.DI(z80_Din),
-	.DO(z80_Dout)
+	.CLK(clk_49m),										// Actual frequency: 49.152MHz
+	.RESET(~reset),										// 6809 Uses Active-High Reset
+	.CEN(cen_1m5 & ~pause),								// 49.152/32 = 1.536 MHz
+	.CPU_RW(m6809_rw),									// Single Read/Write Line
+    .CPU_ADDR(m6809_A)									// 16-Bit Address Bus
+	.CPU_DIN(m6809_Din),								// Data In
+	.CPU_DOUT(m6809_Dout),								// Data Out
+	.CPU_IRQ(m6809_irq),								// Fast IRQ (Not Used, Tie High)
+	.CPU_firq(1'b1),									// Active-Low NMI
+	.HALT(1'b1), 										// Not Used
+	.HOLD(1'b1)											// Not Used
 );
-//Address decoding for Z80
-wire cs_rom1 = ~n_mreq & n_rfsh & (z80_A[15:13] == 3'b000);
-wire cs_rom2 = ~n_mreq & n_rfsh & (z80_A[15:13] == 3'b001);
-wire cs_rom3 = ~n_mreq & n_rfsh & (z80_A[15:13] == 3'b010);
-wire n_cs_k501 = ~(~n_mreq & n_rfsh & z80_A[15]);
-wire cs_mainlatch = (~n_k501_enable & z80_A[14]) & (z80_A[8:7] == 2'b11) & ~n_ram_write;
-wire cs_z80sharedram = (z80_A[14:13] == 2'b01) & ~n_k501_enable;
-wire n_cs_vram_wram = ~((z80_A[14:13] == 2'b00) & ~n_k501_enable);
-//Part of the RAM decoding is handled by the Konami 501 custom chip - instantiate an instance of this IC here
-wire n_wait, n_ram_write, n_k501_enable;
-wire [7:0] k501_D, k501_Dout;
-k501 u11E
-(
-	.CLK(clk_49m),
-	.CEN(cen_12m),
-	.H1(h_cnt[0]),
-	.H2(h_cnt[1]),
-	.RAM(n_cs_k501),
-	.RD(n_rd),
-	.WAIT(n_wait),
-	.WRITE(n_ram_write),
-	.ENABLE(n_k501_enable),
-	.Di(z80_Dout),
-	.XDi(k501_Din),
-	.Do(k501_Dout),
-	.XDo(k501_D)
-);
-//Multiplex data inputs to Z80
-wire [7:0] z80_Din = cs_rom1    ? eprom1_D:
-                     cs_rom2    ? eprom2_D:
-                     cs_rom3    ? eprom3_D:
-                     ~n_cs_k501 ? k501_Dout:
-                     8'hFF;
 
-//Z80 ROMs
-//ROM 1/3
+//Address decoding for mc6809
+wire cs_rom1 = m6809_rw & (m6809_A[15:13] == 3'b000);  	// Read Only
+wire cs_rom2 = m6809_rw & (m6809_A[15:13] == 3'b001);	// Write Only
+wire cs_rom3 = m6809_rw & (m6809_A[15:13] == 3'b010);	// Read/Write
+wire vram_wram_wr = cs_vram_wram & ~m6809_rw;  			// Write when RW=0
+
+//Multiplex data inputs to mc6809
+wire [7:0] m6809_Din = cs_rom1         ? eprom1_D:
+                       cs_rom2         ? eprom2_D:
+                       cs_rom3         ? eprom3_D:
+                       cs_rom4         ? eprom4_D:
+                       cs_rom5         ? eprom5_D:
+                       cs_rom6         ? eprom6_D:
+                       cs_vram_wram    ? vram_wram_D:
+                       cs_sharedram    ? sharedram_D:
+                       cs_controls_dip ? controls_dip:
+                       8'hFF;
+
+//mc6809 ROMs
+//ROM 1/6
 wire [7:0] eprom1_D;
 eprom_1 u11J
 (
@@ -200,7 +179,7 @@ eprom_1 u11J
 	.CS_DL(ep1_cs_i),
 	.WR(ioctl_wr)
 );
-//ROM 2/3
+//ROM 2/6
 wire [7:0] eprom2_D;
 eprom_2 u12J
 (
@@ -213,7 +192,7 @@ eprom_2 u12J
 	.CS_DL(ep2_cs_i),
 	.WR(ioctl_wr)
 );
-//ROM 3/3
+//ROM 3/6
 wire [7:0] eprom3_D;
 eprom_3 u13J
 (
@@ -226,14 +205,6 @@ eprom_3 u13J
 	.CS_DL(ep3_cs_i),
 	.WR(ioctl_wr)
 );
-
-//Multiplex data input to Konami 501 data bus passthrough
-wire [7:0] k501_Din = (~n_cs_vram_wram & cs_wram0 & n_vram_wram_wr)   ? wram0_D:
-                      (~n_cs_vram_wram & cs_wram1 & n_vram_wram_wr)   ? wram1_D:
-                      (~n_cs_vram_wram & ~n_cs_vram & n_vram_wram_wr) ? vram_D:
-                      (cs_z80sharedram & n_z80_sharedram_wr)          ? z80_sharedram_D:
-                      (cs_controls_dip1 | cs_dip2 | cs_dip3)          ? controls_dip:
-                      8'hFF;
 
 //Main latch
 reg z80_nmi_mask = 0;
