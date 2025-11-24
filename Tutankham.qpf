@@ -24,8 +24,8 @@
 # -------------------------------------------------------------------------- #
 
 QUARTUS_VERSION = "17.0"
-DATE = "11:39:17  April 9, 2021"
+DATE = "23:23:23  November 23, 2025"
 
 # Revisions
 
-PROJECT_REVISION = "Arcade-Gyruss"
+PROJECT_REVISION = "Tutankham"

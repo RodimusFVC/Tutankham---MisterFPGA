@@ -1,9 +1,10 @@
 //============================================================================
 // 
 //  Port to MiSTer.
-//  Copyright (C) 2021 Sorgelig
+//  Copyright (C) 2025 Rodimus
 //
-//  Gyruss for MiSTer
+//  Tutankham for MiSTer
+//  Borrowed Original Gyruss code from Sorgelig - Tutankham uses similar hardware... similar...
 //  Original design Copyright (C) 2020 MiSTer-X
 //  Updated design Copyright (C) 2021, 2022 Ace, Ash Evans
 //  (aka ElectronAsh/OzOnE), Artemio Urbina, JimmyStones and Kitrinx
