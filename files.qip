@@ -1,0 +1,13 @@
+set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
+
+set_global_assignment -name SYSTEMVERILOG_FILE Arcade-Gyruss.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/Gyruss.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/Gyruss_CPU.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/Gyruss_SND.sv
+set_global_assignment -name VERILOG_FILE rtl/pause.v
+set_global_assignment -name VERILOG_FILE rtl/hiscore.v
+set_global_assignment -name VERILOG_FILE rtl/jtframe_frac_cen.v
+set_global_assignment -name QIP_FILE rtl/cpu/gyruss_cpu.qip
+set_global_assignment -name QIP_FILE rtl/custom/gyruss_custom.qip
+set_global_assignment -name QIP_FILE rtl/sound/gyruss_sound.qip
+set_global_assignment -name QIP_FILE rtl/ram_rom/gyruss_ram_rom.qip
