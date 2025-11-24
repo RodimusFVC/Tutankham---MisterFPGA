@@ -1,7 +1,7 @@
 //============================================================================
 // 
-//  Gyruss sound PCB model
-//  Copyright (C) 2021 Ace
+//  Tutankham Sound PCB
+//  Copyright (C) 2025 Rodimus
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,7 @@
 //
 //============================================================================
 
-module Gyruss_SND
+module Tutankham_SND
 (
 	input                reset,
 	input                clk_49m,         //Actual frequency: 49.152MHz
@@ -42,9 +42,11 @@ module Gyruss_SND
 	output         [7:0] controls_dip,
 	output signed [15:0] sound_l, sound_r,
 	
-	//This input serves to select different fractional dividers to acheive 3.579545MHz for the Z80, 1.789772MHz for the
-	//AY-3-8910s and 8MHz for the i8039 depending on whether Gyruss runs with original or underclocked timings to normalize
-	//sync frequencies
+	//This input serves to select different fractional dividers
+	//     MC6809    - 49.152/32 = 1.536 MHz
+	//     Z80       -  3.579545MHz
+	//     AY-3-8910 -  1.789772MHz
+
 	input                underclock,
 	
 	input                ep10_cs_i,

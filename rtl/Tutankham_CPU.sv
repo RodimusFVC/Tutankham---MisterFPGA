@@ -1,7 +1,7 @@
 //============================================================================
 // 
-//  Gyruss main PCB model
-//  Copyright (C) 2021 Ace
+//  Tutankham Main PCB
+//  Copyright (C) 2025 Rodimus
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -24,7 +24,7 @@
 //============================================================================
 
 //Module declaration, I/O ports
-module Gyruss_CPU
+module Tutankham_CPU
 (
 	input         reset,
 	input         clk_49m, //Actual frequency: 49.152MHz

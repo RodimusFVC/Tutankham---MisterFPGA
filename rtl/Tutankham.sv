@@ -1,7 +1,7 @@
 //============================================================================
 // 
-//  Gyruss top-level module
-//  Copyright (C) 2021 Ace
+//  Tutankham top-level module
+//  Copyright (C) 2025 Rodimus
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -24,7 +24,7 @@
 //============================================================================
 
 //Module declaration, I/O ports
-module Gyruss
+module Tutankham
 (
 	input                reset,
 	input                clk_49m,                  //Actual frequency: 49.152MHz
@@ -51,9 +51,11 @@ module Gyruss
 	
 	input                pause,
 	
-	//This input serves to select different fractional dividers to acheive 3.579545MHz for the sound Z80, 1.789772MHz for the
-	//AY-3-8910s and 8MHz for the i8039 depending on whether Gyruss runs with original or underclocked timings to normalize
-	//sync frequencies
+	//This input serves to select different fractional dividers
+	//     MC6809    - 49.152/32 = 1.536 MHz
+	//     Z80       -  3.579545MHz
+	//     AY-3-8910 -  1.789772MHz
+
 	input                underclock,
 
 	input         [10:0] hs_address,
@@ -94,7 +96,7 @@ selector DLSEL
 );
 
 //Instantiate main PCB
-Gyruss_CPU main_pcb
+Tutankham_CPU main_pcb
 (
 	.reset(reset),
 	.clk_49m(clk_49m),
@@ -147,7 +149,7 @@ Gyruss_CPU main_pcb
 );
 
 //Instantiate sound PCB
-Gyruss_SND sound_pcb
+Tutankham_SND sound_pcb
 (
 	.reset(reset),
 	.clk_49m(clk_49m),
