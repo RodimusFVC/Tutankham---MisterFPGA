@@ -333,11 +333,10 @@ wire [7:0] palette_D = palette_regs[cpu_A[3:0]];  // CPU read-back path
 wire [7:0] videoram_D;
 wire [7:0] videoram_vout;
 // Apply flip and scroll to VRAM read coordinates (matching MAME screen_update)
-// flip_x XORs the X coordinate, flip_y XORs the Y coordinate
-wire [7:0] eff_x = h_cnt[7:0] ^ {8{flip_x}};
+wire [7:0] eff_x = pix_x ^ {8{flip_x}};
 wire [7:0] scroll_y = (eff_x < 8'd192) ? scroll_reg : 8'd0;
 wire [7:0] eff_y = (v_cnt[7:0] ^ {8{flip_y}}) + scroll_y;
-wire [14:0] vram_rd_addr = {eff_y, eff_x[7:1]}; 
+wire [14:0] vram_rd_addr = {eff_y, eff_x[7:1]};
 
 dpram_dc #(.widthad_a(15)) videoram
 (
@@ -451,6 +450,11 @@ k082 F5
 
 //Generate HBlank (active high) while the horizontal counter is between 141 and 268
 wire hblk = (h_cnt > 140 && h_cnt < 269);
+
+// Generate a 0-255 pixel X counter synchronized to the visible window
+// Visible pixels: h_cnt 269-511 (243 px), then 128-140 (13 px) = 256 total
+// Use h_cnt offset so pixel 0 aligns with h_cnt=269
+wire [7:0] pix_x = h_cnt[7:0] - 8'd13;  // h_cnt=269 → 269[7:0]=13 → pix_x=0
 
 // Framebuffer pixel extraction: 4-bit packed pixels, 2 per byte
 wire [3:0] pixel_index = eff_x[0] ? videoram_vout[7:4] : videoram_vout[3:0];
