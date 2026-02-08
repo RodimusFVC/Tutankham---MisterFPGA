@@ -26,10 +26,6 @@ module video_cleaner
 	//optional de
 	input            DE_in,
 
-	//optional interlace support
-	input            interlace,
-	input            f1,
-
 	// video output signals
 	output reg [7:0] VGA_R,
 	output reg [7:0] VGA_G,
@@ -60,19 +56,14 @@ always @(posedge clk_vid) begin
 		HBlank_out <= hbl;
 
 		VGA_HS <= hs;
+		if(~VGA_HS & hs) VGA_VS <= vs;
 
 		VGA_R  <= R;
 		VGA_G  <= G;
 		VGA_B  <= B;
 		DE_out <= DE_in;
 
-		if (interlace & f1) begin
-			VGA_VS <= vs;
-			VBlank_out <= vbl;
-		end else begin
-			if(~VGA_HS & hs) VGA_VS <= vs;
-			if(HBlank_out & ~hbl) VBlank_out <= vbl;
-		end
+		if(HBlank_out & ~hbl) VBlank_out <= vbl;
 	end
 end
 

@@ -1,7 +1,7 @@
 //============================================================================
 // 
 //  Tutankham top-level module
-//  Copyright (C) 2025 Rodimus
+//  Copyright (C) 2021 Ace
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -30,18 +30,16 @@ module Tutankham
 	input                clk_49m,                  //Actual frequency: 49.152MHz
 	input          [1:0] coin,                     //0 = coin 1, 1 = coin 2
 	input          [1:0] start_buttons,            //0 = Player 1, 1 = Player 2
-	input          [3:0] left_joystick,            //2 = left, 3 = right
-	input          [3:0] right_joystick,           //0 = up, 1 = down, 2 = left, 3 = right
+	input          [3:0] p1_joystick, p2_joystick, //0 = up, 1 = down, 2 = left, 3 = right
 	input                p1_fire,
 	input                p2_fire,
 	input                btn_service,
-	input         [23:0] dip_sw,
+	input         [15:0] dip_sw,
 	output               video_hsync, video_vsync, video_csync,
 	output               video_hblank, video_vblank,
 	output               ce_pix,
-	output         [2:0] video_r, video_g,
-	output         [1:0] video_b,
-	output signed [15:0] sound_l, sound_r,
+	output         [4:0] video_r, video_g, video_b,
+	output signed [15:0] sound,
 	
 	//Screen centering (alters HSync, VSync and VBlank timing in the Konami 082 to reposition the video output)
 	input          [3:0] h_center, v_center,
@@ -49,51 +47,55 @@ module Tutankham
 	input         [24:0] ioctl_addr,
 	input          [7:0] ioctl_data,
 	input                ioctl_wr,
+	input          [7:0] ioctl_index,
 	
 	input                pause,
 	
-	//This input serves to select different fractional dividers
-	//     MC6809    - 49.152/32 = 1.536 MHz
-	//     Z80       -  3.579545MHz
-	//     AY-3-8910 -  1.789772MHz
-
+	//This input serves to select different fractional dividers to acheive 1.789772MHz for the sound Z80 and AY-3-8910s
+	//depending on whether Time Pilot runs with original or underclocked timings to normalize sync frequencies
 	input                underclock,
 
-	input         [10:0] hs_address,
+	input         [15:0] hs_address,
 	input          [7:0] hs_data_in,
 	output         [7:0] hs_data_out,
-	input                hs_write,
-	input                hs_access
+	input                hs_write
 );
 
 //Linking signals between PCBs
-wire A5, A6, irq_trigger, cs_sounddata, cs_controls_dip1, cs_dip2, cs_dip3;
+wire A5, A6, irq_trigger, cs_sounddata, cs_controls_dip1, cs_dip2;
 wire [7:0] controls_dip, cpubrd_D;
 
+//Index-filtered ROM write signals
+wire ioctl_wr_cpu = ioctl_wr && (ioctl_index == 8'd0); // Main CPU board (index 0)
+wire ioctl_wr_snd = ioctl_wr && (ioctl_index == 8'd1); // Sound board (index 1)
+
 //ROM loader signals for MISTer (loads ROMs from SD card)
-wire ep1_cs_i, ep2_cs_i, ep3_cs_i, ep4_cs_i, ep5_cs_i, ep6_cs_i, ep7_cs_i, ep8_cs_i, ep9_cs_i,
-     ep10_cs_i, ep11_cs_i, ep12_cs_i;
-wire cp_cs_i, tl_cs_i, sl_cs_i;
+wire rom_m1_cs_i, rom_m2_cs_i, rom_m3_cs_i, rom_m4_cs_i, rom_m5_cs_i, rom_m6_cs_i;
+wire bank0_cs_i, bank1_cs_i, bank2_cs_i, bank3_cs_i, bank4_cs_i;
+wire bank5_cs_i, bank6_cs_i, bank7_cs_i, bank8_cs_i;
+
+//Sound board ROM chip select (index 1, 8KB at 0x0000-0x1FFF)
+wire ep7_cs_i = (ioctl_addr < 25'h2000);
 
 //MiSTer data write selector
 selector DLSEL
 (
 	.ioctl_addr(ioctl_addr),
-	.ep1_cs(ep1_cs_i),
-	.ep2_cs(ep2_cs_i),
-	.ep3_cs(ep3_cs_i),
-	.ep4_cs(ep4_cs_i),
-	.ep5_cs(ep5_cs_i),
-	.ep6_cs(ep6_cs_i),
-	.ep7_cs(ep7_cs_i),
-	.ep8_cs(ep8_cs_i),
-	.ep9_cs(ep9_cs_i),
-	.ep10_cs(ep10_cs_i),
-	.ep11_cs(ep11_cs_i),
-	.ep12_cs(ep12_cs_i),
-	.cp_cs(cp_cs_i),
-	.tl_cs(tl_cs_i),
-	.sl_cs(sl_cs_i)
+	.rom_m1_cs(rom_m1_cs_i),
+	.rom_m2_cs(rom_m2_cs_i),
+	.rom_m3_cs(rom_m3_cs_i),
+	.rom_m4_cs(rom_m4_cs_i),
+	.rom_m5_cs(rom_m5_cs_i),
+	.rom_m6_cs(rom_m6_cs_i),
+	.bank0_cs(bank0_cs_i),
+	.bank1_cs(bank1_cs_i),
+	.bank2_cs(bank2_cs_i),
+	.bank3_cs(bank3_cs_i),
+	.bank4_cs(bank4_cs_i),
+	.bank5_cs(bank5_cs_i),
+	.bank6_cs(bank6_cs_i),
+	.bank7_cs(bank7_cs_i),
+	.bank8_cs(bank8_cs_i)
 );
 
 //Instantiate main PCB
@@ -115,42 +117,44 @@ Tutankham_CPU main_pcb
 	.v_center(v_center),
 	
 	.controls_dip(controls_dip),
+	.dip_sw(dip_sw),
 	.cpubrd_Dout(cpubrd_D),
 	.cpubrd_A5(A5),
 	.cpubrd_A6(A6),
 	.cs_sounddata(cs_sounddata),
 	.irq_trigger(irq_trigger),
 	.cs_dip2(cs_dip2),
-	.cs_dip3(cs_dip3),
 	.cs_controls_dip1(cs_controls_dip1),
 	
-	.ep1_cs_i(ep1_cs_i),
-	.ep2_cs_i(ep2_cs_i),
-	.ep3_cs_i(ep3_cs_i),
-	.ep4_cs_i(ep4_cs_i),
-	.ep5_cs_i(ep5_cs_i),
-	.ep6_cs_i(ep6_cs_i),
-	.ep7_cs_i(ep7_cs_i),
-	.ep8_cs_i(ep8_cs_i),
-	.ep9_cs_i(ep9_cs_i),
-	.cp_cs_i(cp_cs_i),
-	.tl_cs_i(tl_cs_i),
-	.sl_cs_i(sl_cs_i),
+	.rom_m1_cs_i(rom_m1_cs_i),
+	.rom_m2_cs_i(rom_m2_cs_i),
+	.rom_m3_cs_i(rom_m3_cs_i),
+	.rom_m4_cs_i(rom_m4_cs_i),
+	.rom_m5_cs_i(rom_m5_cs_i),
+	.rom_m6_cs_i(rom_m6_cs_i),
+	.bank0_cs_i(bank0_cs_i),
+	.bank1_cs_i(bank1_cs_i),
+	.bank2_cs_i(bank2_cs_i),
+	.bank3_cs_i(bank3_cs_i),
+	.bank4_cs_i(bank4_cs_i),
+	.bank5_cs_i(bank5_cs_i),
+	.bank6_cs_i(bank6_cs_i),
+	.bank7_cs_i(bank7_cs_i),
+	.bank8_cs_i(bank8_cs_i),
 	.ioctl_addr(ioctl_addr),
-	.ioctl_wr(ioctl_wr),
+	.ioctl_wr(ioctl_wr_cpu),
 	.ioctl_data(ioctl_data),
 
 	.pause(pause),
 
 	.hs_address(hs_address),
-	.hs_data_in(hs_data_in),
 	.hs_data_out(hs_data_out),
-	.hs_write(hs_write),
-	.hs_access(hs_access)
+	.hs_data_in(hs_data_in),
+	.hs_write(hs_write)
 );
 
 //Instantiate sound PCB
-Tutankham_SND sound_pcb
+TimePilot_SND sound_pcb
 (
 	.reset(reset),
 	.clk_49m(clk_49m),
@@ -177,7 +181,7 @@ Tutankham_SND sound_pcb
 	
 	.ep7_cs_i(ep7_cs_i),
 	.ioctl_addr(ioctl_addr),
-	.ioctl_wr(ioctl_wr),
+	.ioctl_wr(ioctl_wr_snd),
 	.ioctl_data(ioctl_data)
 );
 

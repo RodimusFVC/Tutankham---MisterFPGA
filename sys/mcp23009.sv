@@ -8,12 +8,10 @@ module mcp23009
 
 	output reg [2:0] btn,
 	input      [2:0] led,
-	output reg       flg_sd_cd,
-	output reg       flg_present,
-	output reg       flg_mode,
+	output reg       sd_cd,
 
-	output	         scl,
-	inout 	         sda
+	output		     scl,
+	inout 		     sda
 );
 
 
@@ -52,9 +50,7 @@ always@(posedge clk) begin
 		idx     <= 0;
 		btn     <= 0;
 		rw      <= 0;
-		flg_sd_cd   <= 1;
-		flg_present <= 0;
-		flg_mode    <= 1;
+		sd_cd   <= 1;
 	end
 	else begin
 		if(~&init_data[idx]) begin
@@ -88,10 +84,7 @@ always@(posedge clk) begin
 						state <= 0;
 						rw <= 0;
 						if(!error) begin
-							if(rw) begin
-								{flg_sd_cd, flg_mode, btn} <= {dout[7:3]};
-								flg_present <= 1;
-							end
+							if(rw) {sd_cd, btn} <= {dout[7], dout[5:3]};
 							rw <= ~rw;
 						end
 					end

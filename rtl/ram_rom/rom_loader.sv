@@ -1,5 +1,5 @@
 //============================================================================
-// 
+//
 //  SD card ROM loader and ROM selector for MISTer.
 //  Copyright (C) 2019, 2020 Kitrinx (aka Rysha)
 //
@@ -7,7 +7,7 @@
 //  copy of this software and associated documentation files (the "Software"),
 //  to deal in the Software without restriction, including without limitation
 //  the rights to use, copy, modify, merge, publish, distribute, sublicense,
-//  and/or sell copies of the Software, and to permit persons to whom the 
+//  and/or sell copies of the Software, and to permit persons to whom the
 //  Software is furnished to do so, subject to the following conditions:
 //
 //  The above copyright notice and this permission notice shall be included in
@@ -23,67 +23,67 @@
 //
 //============================================================================
 
-// Rom layout for Tutankham:
-// MC6809 CPU ROMs -
-// 0x0A000 - 0x0AFFF = m1.1h
-// 0x0B000 - 0x0BFFF = m2.2h
-// 0x0C000 - 0x0CFFF = j3.3h
-// 0x0D000 - 0x0DFFF = m4.4h
-// 0x0E000 - 0x0EFFF = m5.5h
-// 0x0F000 - 0x0FFFF = j6.6h
-// 0x10000 - 0x10FFF = c1.1i
-// 0x11000 - 0x11FFF = c2.2i
-// 0x12000 - 0x12FFF = c3.3i
-// 0x13000 - 0x13FFF = c4.4i
-// 0x14000 - 0x14FFF = c5.5i
-// 0x15000 - 0x15FFF = c6.6i
-// 0x16000 - 0x16FFF = c7.7i
-// 0x17000 - 0x17FFF = c8.8i
-// 0x18000 - 0x18FFF = c9.9i
-// Z80 CPU ROMs -
-// 0x00000 - 0x00FFF = s1.7a
-// 0x01000 - 0x01FFF = s2.8a
+// ROM layout for Tutankham (index 0 - main CPU board):
+// 0x0000 - 0x0FFF = rom_m1 (m1.1h)
+// 0x1000 - 0x1FFF = rom_m2 (m2.2h)
+// 0x2000 - 0x2FFF = rom_m3 (3j.3h)
+// 0x3000 - 0x3FFF = rom_m4 (m4.4h)
+// 0x4000 - 0x4FFF = rom_m5 (m5.5h)
+// 0x5000 - 0x5FFF = rom_m6 (j6.6h)
+// 0x6000 - 0x6FFF = bank0  (c1.1i)
+// 0x7000 - 0x7FFF = bank1  (c2.2i)
+// 0x8000 - 0x8FFF = bank2  (c3.3i)
+// 0x9000 - 0x9FFF = bank3  (c4.4i)
+// 0xA000 - 0xAFFF = bank4  (c5.5i)
+// 0xB000 - 0xBFFF = bank5  (c6.6i)
+// 0xC000 - 0xCFFF = bank6  (c7.7i)
+// 0xD000 - 0xDFFF = bank7  (c8.8i)
+// 0xE000 - 0xEFFF = bank8  (c9.9i)
+// Sound board ROMs loaded separately via index 1
 
 module selector
 (
 	input logic [24:0] ioctl_addr,
-	output logic ep1_cs, ep2_cs, ep3_cs, ep4_cs, ep5_cs, ep6_cs, ep7_cs, ep8_cs,
-                 ep9_cs, ep10_cs, ep11_cs, ep12_cs, cp_cs, tl_cs, sl_cs
+	output logic rom_m1_cs, rom_m2_cs, rom_m3_cs, rom_m4_cs, rom_m5_cs, rom_m6_cs,
+	output logic bank0_cs, bank1_cs, bank2_cs, bank3_cs, bank4_cs,
+	             bank5_cs, bank6_cs, bank7_cs, bank8_cs
 );
 
 	always_comb begin
-		{ep1_cs, ep2_cs, ep3_cs, ep4_cs, ep5_cs, ep6_cs, ep7_cs, ep8_cs, ep9_cs,
-		 ep10_cs, ep11_cs, ep12_cs, cp_cs, tl_cs, sl_cs} = 0;
-		if(ioctl_addr < 'h2000)
-			ep1_cs = 1; // 0x2000 13
+		{rom_m1_cs, rom_m2_cs, rom_m3_cs, rom_m4_cs, rom_m5_cs, rom_m6_cs,
+		 bank0_cs, bank1_cs, bank2_cs, bank3_cs, bank4_cs, bank5_cs,
+		 bank6_cs, bank7_cs, bank8_cs} = 0;
+
+		if(ioctl_addr < 'h1000)
+			rom_m1_cs = 1;
+		else if(ioctl_addr < 'h2000)
+			rom_m2_cs = 1;
+		else if(ioctl_addr < 'h3000)
+			rom_m3_cs = 1;
 		else if(ioctl_addr < 'h4000)
-			ep2_cs = 1; // 0x2000 13
+			rom_m4_cs = 1;
+		else if(ioctl_addr < 'h5000)
+			rom_m5_cs = 1;
 		else if(ioctl_addr < 'h6000)
-			ep3_cs = 1; // 0x2000 13
+			rom_m6_cs = 1;
+		else if(ioctl_addr < 'h7000)
+			bank0_cs = 1;
 		else if(ioctl_addr < 'h8000)
-			ep4_cs = 1; // 0x2000 13
+			bank1_cs = 1;
+		else if(ioctl_addr < 'h9000)
+			bank2_cs = 1;
 		else if(ioctl_addr < 'hA000)
-			ep5_cs = 1; // 0x2000 13
+			bank3_cs = 1;
+		else if(ioctl_addr < 'hB000)
+			bank4_cs = 1;
 		else if(ioctl_addr < 'hC000)
-			ep6_cs = 1; // 0x2000 13
+			bank5_cs = 1;
+		else if(ioctl_addr < 'hD000)
+			bank6_cs = 1;
 		else if(ioctl_addr < 'hE000)
-			ep7_cs = 1; // 0x2000 13
-		else if(ioctl_addr < 'h10000)
-			ep8_cs = 1; // 0x2000 13
-		else if(ioctl_addr < 'h12000)
-			ep9_cs = 1; // 0x2000 13
-		else if(ioctl_addr < 'h14000)
-			ep10_cs = 1; // 0x2000 13
-		else if(ioctl_addr < 'h16000)
-			ep11_cs = 1; // 0x2000 13
-		else if(ioctl_addr < 'h17000)
-			ep12_cs = 1; // 0x1000 12
-		else if(ioctl_addr < 'h17100)
-			tl_cs = 1; // 0x100 8
-		else if(ioctl_addr < 'h17200)
-			sl_cs = 1; // 0x100 8
-		else
-			cp_cs = 1; // 0x20 5
+			bank7_cs = 1;
+		else if(ioctl_addr < 'hF000)
+			bank8_cs = 1;
 	end
 endmodule
 
@@ -91,271 +91,8 @@ endmodule
 // EPROMS //
 ////////////
 
-module eprom_1
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_1
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_2
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_2
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_3
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_3
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_4
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_4
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_5
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_5
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_6
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_6
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_7
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_7
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_8
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_8
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_9
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_9
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_10
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_10
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_11
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [12:0] ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [7:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [7:0] DATA
-);
-	dpram_dc #(.widthad_a(13)) eprom_11
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[12:0]),
-		.q_a(DATA[7:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[12:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module eprom_12
+//Generic 4KB ROM module (12-bit address)
+module eprom_4k
 (
 	input logic        CLK,
 	input logic        CLK_DL,
@@ -366,7 +103,7 @@ module eprom_12
 	input logic        WR,
 	output logic [7:0] DATA
 );
-	dpram_dc #(.widthad_a(12)) eprom_12
+	dpram_dc #(.widthad_a(12)) rom
 	(
 		.clock_a(CLK),
 		.address_a(ADDR[11:0]),
@@ -379,77 +116,26 @@ module eprom_12
 	);
 endmodule
 
-///////////
-// PROMS //
-///////////
-
-module color_prom
+//Sound board ROM (8KB, 13-bit address) - used by sound board index 1
+module eprom_7
 (
 	input logic        CLK,
 	input logic        CLK_DL,
-	input logic [4:0]  ADDR,
+	input logic [11:0] ADDR,
 	input logic [24:0] ADDR_DL,
 	input logic [7:0]  DATA_IN,
 	input logic        CS_DL,
 	input logic        WR,
 	output logic [7:0] DATA
 );
-	dpram_dc #(.widthad_a(5)) color_prom_1
+	dpram_dc #(.widthad_a(12)) eprom_7
 	(
 		.clock_a(CLK),
-		.address_a(ADDR[4:0]),
+		.address_a(ADDR[11:0]),
 		.q_a(DATA[7:0]),
 
 		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[4:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module tile_lut_prom
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [7:0]  ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [3:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [3:0] DATA
-);
-	dpram_dc #(.widthad_a(8)) tile_lut_prom
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[7:0]),
-		.q_a(DATA[3:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[7:0]),
-		.data_b(DATA_IN),
-		.wren_b(WR & CS_DL)
-	);
-endmodule
-
-module sprite_lut_prom
-(
-	input logic        CLK,
-	input logic        CLK_DL,
-	input logic [7:0]  ADDR,
-	input logic [24:0] ADDR_DL,
-	input logic [3:0]  DATA_IN,
-	input logic        CS_DL,
-	input logic        WR,
-	output logic [3:0] DATA
-);
-	dpram_dc #(.widthad_a(8)) sprite_lut_prom
-	(
-		.clock_a(CLK),
-		.address_a(ADDR[7:0]),
-		.q_a(DATA[3:0]),
-
-		.clock_b(CLK_DL),
-		.address_b(ADDR_DL[7:0]),
+		.address_b(ADDR_DL[11:0]),
 		.data_b(DATA_IN),
 		.wren_b(WR & CS_DL)
 	);
