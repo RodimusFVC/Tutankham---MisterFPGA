@@ -337,7 +337,7 @@ spram #(8, 4) palette_ram
 //Video RAM (0x0000-0x7FFF, 32KB) - dual port: A=CPU, B=video scanout
 wire [7:0] videoram_D;
 wire [7:0] videoram_vout;
-wire [14:0] vram_rd_addr = {v_cnt[7:0], h_cnt[8:2]}; // y*128 + x/2
+wire [14:0] vram_rd_addr = {v_cnt[7:0], h_cnt[7:1]}; // y*128 + x/2
 
 dpram_dc #(.widthad_a(15)) videoram
 (
@@ -431,7 +431,7 @@ k082 F5
 wire hblk = (h_cnt > 140 && h_cnt < 269);
 
 // Framebuffer pixel extraction: 4-bit packed pixels, 2 per byte
-wire [3:0] pixel_index = h_cnt[1] ? videoram_vout[7:4] : videoram_vout[3:0];
+wire [3:0] pixel_index = h_cnt[0] ? videoram_vout[7:4] : videoram_vout[3:0];
 
 // Direct grayscale mapping from pixel index (palette lookup in later phase)
 assign red   = {pixel_index, 1'b0};
