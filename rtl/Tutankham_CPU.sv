@@ -368,11 +368,7 @@ always_ff @(posedge clk_49m) begin
 	else if(cen_3m) begin
 		if(cs_mainlatch)
 			case(cpu_A[2:0])
-				3'b000: begin  // IRQ enable (LS259 Q0)
-					irq_enable <= cpu_Dout[0];
-					if(!cpu_Dout[0])
-						n_irq <= 1;  // Clear IRQ when disabled
-				end
+				3'b000: irq_enable <= cpu_Dout[0];   // LS259 Q0: IRQ enable
 				3'b001: ;  // PAY OUT - unused
 				3'b010: ;  // Coin counter 2
 				3'b011: ;  // Coin counter 1
@@ -384,7 +380,10 @@ always_ff @(posedge clk_49m) begin
 	end
 end
 
-//Generate VBlank IRQ for MC6809E (every other frame, per MAME)
+//Generate VBlank IRQ for MC6809E
+// MAME: IRQ fires every other vblank frame when irq_enable is set.
+//       IRQ is cleared when irq_enable is written to 0.
+// ALL n_irq logic is in this single always_ff to avoid multiple-driver errors.
 reg n_irq = 1;
 reg irq_toggle = 0;
 reg vblank_irq_en_last = 0;
@@ -396,13 +395,15 @@ always_ff @(posedge clk_49m) begin
 	end
 	else if(cen_6m) begin
 		vblank_irq_en_last <= vblank_irq_en;
-		// Detect rising edge of vblank_irq_en
-		if(vblank_irq_en && !vblank_irq_en_last) begin
+		// Clear IRQ when irq_enable is turned off (matches MAME irq_enable_w)
+		if(!irq_enable)
+			n_irq <= 1;
+		// Detect rising edge of vblank_irq_en pulse from k082
+		else if(vblank_irq_en && !vblank_irq_en_last) begin
 			irq_toggle <= ~irq_toggle;
-			if(!irq_toggle && irq_enable)
-				n_irq <= 0;  // Assert IRQ every other frame
+			if(!irq_toggle)  // Fire on every other vblank
+				n_irq <= 0;
 		end
-		// IRQ cleared when irq_enable is written to 0 (done in mainlatch above)
 	end
 end
 
