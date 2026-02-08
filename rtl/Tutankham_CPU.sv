@@ -110,15 +110,26 @@ wire cen_3m = !div;
 //MC6809E E and Q clock generation from existing div[3:0] counter
 //div rolls over every 16 clocks: E toggles at 49.152MHz/16 = 3.072MHz, E freq = 1.536MHz
 //Q leads E by 90 degrees (4 system clocks)
+
+//MC6809E E and Q clock generation
+//The 6809E on Tutankham runs at 1.536MHz (E/Q are 90-degree shifted phases).
+//From 49.152MHz input, one full E/Q cycle is 32 master clocks.
+reg [4:0] cpu_div = 5'd0;									// Fixes
 reg cpu_E = 0;
 reg cpu_Q = 0;
 always_ff @(posedge clk_49m) begin
 	if(~pause) begin
-		case(div[3:0])
-			4'd0:  begin cpu_E <= 1; cpu_Q <= 0; end
-			4'd4:  begin cpu_E <= 1; cpu_Q <= 1; end
-			4'd8:  begin cpu_E <= 0; cpu_Q <= 1; end
-			4'd12: begin cpu_E <= 0; cpu_Q <= 0; end
+//		case(div[3:0])
+//			4'd0:  begin cpu_E <= 1; cpu_Q <= 0; end
+//			4'd4:  begin cpu_E <= 1; cpu_Q <= 1; end
+//			4'd8:  begin cpu_E <= 0; cpu_Q <= 1; end
+//			4'd12: begin cpu_E <= 0; cpu_Q <= 0; end
+		cpu_div <= cpu_div + 5'd1;							// Fixes
+		case(cpu_div)										// Fixes
+			5'd0:  begin cpu_E <= 1; cpu_Q <= 0; end		// Fixes
+			5'd8:  begin cpu_E <= 1; cpu_Q <= 1; end		// Fixes
+			5'd16: begin cpu_E <= 0; cpu_Q <= 1; end		// Fixes
+			5'd24: begin cpu_E <= 0; cpu_Q <= 0; end		// Fixes
 			default: ;
 		endcase
 	end
@@ -366,7 +377,8 @@ always_ff @(posedge clk_49m) begin
 	end
 	else if(cen_3m) begin
 		if(cs_mainlatch)
-			case(z80_A[3:1])
+//			case(z80_A[3:1])
+            case(z80_A[2:0])								// Fixes
 				3'b000: nmi_mask <= z80_Dout[0];
 				3'b001: flip <= z80_Dout[0];
 				3'b010: cs_soundirq <= z80_Dout[0];
