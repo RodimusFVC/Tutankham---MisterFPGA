@@ -332,10 +332,12 @@ wire [7:0] palette_D = palette_regs[cpu_A[3:0]];  // CPU read-back path
 //Video RAM (0x0000-0x7FFF, 32KB) - dual port: A=CPU, B=video scanout
 wire [7:0] videoram_D;
 wire [7:0] videoram_vout;
-// Apply scroll offset to vertical coordinate (MAME: yscroll applied when effx < 192)
-wire [7:0] scroll_y = (h_cnt[7:0] < 8'd192) ? scroll_reg : 8'd0;
-wire [7:0] eff_y = v_cnt[7:0] + scroll_y;
-wire [14:0] vram_rd_addr = {eff_y, h_cnt[7:1]}; // (y+scroll)*128 + x/2
+// Apply flip and scroll to VRAM read coordinates (matching MAME screen_update)
+// flip_x XORs the X coordinate, flip_y XORs the Y coordinate
+wire [7:0] eff_x = h_cnt[7:0] ^ {8{flip_x}};
+wire [7:0] scroll_y = (eff_x < 8'd192) ? scroll_reg : 8'd0;
+wire [7:0] eff_y = (v_cnt[7:0] ^ {8{flip_y}}) + scroll_y;
+wire [14:0] vram_rd_addr = {eff_y, eff_x[7:1]}; 
 
 dpram_dc #(.widthad_a(15)) videoram
 (
@@ -451,7 +453,7 @@ k082 F5
 wire hblk = (h_cnt > 140 && h_cnt < 269);
 
 // Framebuffer pixel extraction: 4-bit packed pixels, 2 per byte
-wire [3:0] pixel_index = h_cnt[0] ? videoram_vout[7:4] : videoram_vout[3:0];
+wire [3:0] pixel_index = eff_x[0] ? videoram_vout[7:4] : videoram_vout[3:0];
 
 // Palette lookup — convert 4-bit pixel index to RGB via palette registers
 // Palette byte format (Galaxian/Konami standard): BBGGGRRR
