@@ -82,20 +82,47 @@ assign cpubrd_A6 = cpu_A[6];
 //Assign CPU board data output to sound board
 assign cpubrd_Dout = cpu_Dout;
 
-//Generate and output chip select for sound command
-assign cs_sounddata = cs_soundcmd;
-
-//Generate sound IRQ trigger — pulse on write to 0x8600 (matching MAME sound_on_w)
-reg sound_irq = 0;
+// Latch sound command strobe — hold until sound board's cen_3m can sample it
+// The CPU write is brief; the sound board samples on cen_3m which is every 16 clocks.
+// We need to stretch the pulse so it's guaranteed to be seen.
+reg cs_sounddata_latch = 0;
+reg [3:0] snd_data_hold = 0;
 always_ff @(posedge clk_49m) begin
-	if(!reset)
-		sound_irq <= 0;
-	else if(cen_3m) begin
-		if(cs_soundon)
-			sound_irq <= 1;   // Assert for one cen_3m cycle
-		else
-			sound_irq <= 0;   // De-assert next cycle = pulse
-	end
+    if(!reset) begin
+        cs_sounddata_latch <= 0;
+        snd_data_hold <= 0;
+    end
+    else begin
+        if(cs_soundcmd) begin
+            cs_sounddata_latch <= 1;
+            snd_data_hold <= 4'd15;  // Hold for 16 clocks (guarantees one cen_3m)
+        end
+        else if(snd_data_hold > 0)
+            snd_data_hold <= snd_data_hold - 4'd1;
+        else
+            cs_sounddata_latch <= 0;
+    end
+end
+assign cs_sounddata = cs_sounddata_latch;
+
+// Sound IRQ trigger — stretch pulse so sound board's cen_3m can catch it
+reg sound_irq = 0;
+reg [3:0] snd_irq_hold = 0;
+always_ff @(posedge clk_49m) begin
+    if(!reset) begin
+        sound_irq <= 0;
+        snd_irq_hold <= 0;
+    end
+    else begin
+        if(cs_soundon) begin
+            sound_irq <= 1;
+            snd_irq_hold <= 4'd15;
+        end
+        else if(snd_irq_hold > 0)
+            snd_irq_hold <= snd_irq_hold - 4'd1;
+        else
+            sound_irq <= 0;
+    end
 end
 assign irq_trigger = sound_irq;
 
