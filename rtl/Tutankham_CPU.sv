@@ -85,14 +85,16 @@ assign cpubrd_Dout = cpu_Dout;
 //Generate and output chip select for sound command
 assign cs_sounddata = cs_soundcmd;
 
-//Generate sound IRQ trigger
-reg sound_irq = 1;
+//Generate sound IRQ trigger — pulse on write to 0x8600 (matching MAME sound_on_w)
+reg sound_irq = 0;
 always_ff @(posedge clk_49m) begin
-	if(cen_3m) begin
-		if(cs_soundirq)
-			sound_irq <= 1;
+	if(!reset)
+		sound_irq <= 0;
+	else if(cen_3m) begin
+		if(cs_soundon)
+			sound_irq <= 1;   // Assert for one cen_3m cycle
 		else
-			sound_irq <= 0;
+			sound_irq <= 0;   // De-assert next cycle = pulse
 	end
 end
 assign irq_trigger = sound_irq;
@@ -138,9 +140,9 @@ mc6809e E3
 	.RnW(cpu_RnW),
 	.E(cpu_E),
 	.Q(cpu_Q),
-	.nIRQ(1'b1),
+	.nIRQ(n_irq),
 	.nFIRQ(1'b1),
-	.nNMI(n_nmi),
+	.nNMI(1'b1),
 	.BS(),
 	.BA(),
 	.AVMA(),
@@ -154,7 +156,11 @@ mc6809e E3
 
 //Tutankham memory map
 wire n_cs_videoram = ~(cpu_A[15] == 1'b0);               // 0x0000-0x7FFF (32KB video RAM)
-wire n_cs_workram  = ~(cpu_A[15:11] == 5'b10000);         // 0x8000-0x87FF (2KB work RAM)
+// NOTE: There is no general work RAM at 0x8000-0x87FF in Tutankham.
+// That region is entirely I/O (palette, scroll, controls, mainlatch, etc.)
+// The only RAM in the 0x8xxx range is at 0x8800-0x8FFF (workram2).
+// Keeping this wire for hiscore compatibility but it should never be used in the data mux.
+wire n_cs_workram  = 1'b1;  // Disabled — no work RAM at 0x8000-0x87FF
 wire n_cs_workram2 = ~(cpu_A[15:11] == 5'b10001);         // 0x8800-0x8FFF (2KB work RAM expansion)
 wire n_cs_bankrom  = ~(cpu_A[15:12] == 4'b1001);          // 0x9000-0x9FFF (4KB banked ROM window)
 wire n_cs_mainrom  = ~(cpu_A[15:13] == 3'b101 |
@@ -186,26 +192,20 @@ end
 
 //------------------------------------------------------ CPU data input mux ---------------------------------------------------//
 
-// Input data from controls (placeholder - proper wiring in Phase 5)
-wire [7:0] dsw1_data = ~dip_sw[7:0];   // DIP switch 1 (active low)
-wire [7:0] dsw2_data = ~dip_sw[15:8];  // DIP switch 2 (active low)
-wire [7:0] in0_data  = 8'hFF;          // Coins/start (all inactive for now)
-wire [7:0] in1_data  = 8'hFF;          // P1 controls (all inactive)
-wire [7:0] in2_data  = 8'hFF;          // P2 controls (all inactive)
+// Controls and DIP switch data comes from the sound board via controls_dip input.
+// The sound board muxes the correct data based on cs_controls_dip1, cs_dip2,
+// cpubrd_A5, and cpubrd_A6 signals.
 
-wire [7:0] cpu_Din = ~n_cs_mainrom   ? mainrom_D:
-                     ~n_cs_bankrom   ? bank_rom_D:
-                     ~n_cs_workram   ? workram_D:
-                     ~n_cs_workram2  ? workram2_D:
-                     ~n_cs_videoram  ? videoram_D:
-                     cs_palette      ? palette_D:
-                     cs_scroll       ? scroll_reg:
-                     cs_watchdog     ? 8'hFF:
-                     cs_dsw1         ? dsw1_data:
-                     cs_dsw2         ? dsw2_data:
-                     cs_in0          ? in0_data:
-                     cs_in1          ? in1_data:
-                     cs_in2          ? in2_data:
+// I/O registers must be checked first (they're in the 0x8000-0x87FF range)
+// Controls/DIP data comes from the sound board via controls_dip
+wire [7:0] cpu_Din = cs_palette                              ? palette_D :
+                     cs_scroll                               ? scroll_reg :
+                     cs_watchdog                             ? 8'hFF :
+                     (cs_dsw2 | cs_in0 | cs_in1 | cs_in2 | cs_dsw1) ? controls_dip :
+                     ~n_cs_workram2                          ? workram2_D :
+                     ~n_cs_bankrom                           ? bank_rom_D :
+                     ~n_cs_mainrom                           ? mainrom_D :
+                     ~n_cs_videoram                          ? videoram_D :
                      8'hFF;
 
 //------------------------------------------------------- Main program ROMs ----------------------------------------------------//
@@ -288,32 +288,24 @@ eprom_4k bank8 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank8_D),
 
 //------------------------------------------------------------ RAM ------------------------------------------------------------//
 
-//Work RAM (0x8000-0x87FF, 2KB)
-wire [7:0] workram_D;
-dpram_dc #(.widthad_a(11)) workram
+// Work RAM at 0x8000-0x87FF does not exist in Tutankham hardware.
+// Hiscore support uses the 0x8800-0x8FFF work RAM (workram2) instead.
+
+//Work RAM (0x8800-0x8FFF, 2KB) — the only general-purpose RAM in the I/O region
+wire [7:0] workram2_D;
+dpram_dc #(.widthad_a(11)) workram2
 (
 	.clock_a(clk_49m),
-	.wren_a(~n_cs_workram & ~cpu_RnW),
+	.wren_a(~n_cs_workram2 & ~cpu_RnW),
 	.address_a(cpu_A[10:0]),
 	.data_a(cpu_Dout),
-	.q_a(workram_D),
+	.q_a(workram2_D),
 
 	.clock_b(clk_49m),
 	.wren_b(hs_write),
-	.address_b(hs_address),
+	.address_b(hs_address[10:0]),
 	.data_b(hs_data_in),
 	.q_b(hs_data_out)
-);
-
-//Work RAM expansion (0x8800-0x8FFF, 2KB)
-wire [7:0] workram2_D;
-spram #(8, 11) workram2
-(
-	.clk(clk_49m),
-	.we(~n_cs_workram2 & ~cpu_RnW),
-	.addr(cpu_A[10:0]),
-	.data(cpu_Dout),
-	.q(workram2_D)
 );
 
 // Scroll register (0x8100, 1 byte readable/writable)
@@ -323,21 +315,27 @@ always_ff @(posedge clk_49m) begin
 		scroll_reg <= cpu_Dout;
 end
 
-// Palette RAM (0x8000-0x800F, 16 bytes)
-wire [7:0] palette_D;
-spram #(8, 4) palette_ram
-(
-	.clk(clk_49m),
-	.we(cs_palette && ~cpu_RnW),
-	.addr(cpu_A[3:0]),
-	.data(cpu_Dout),
-	.q(palette_D)
-);
+// Palette register file (0x8000-0x800F, 16 entries × 8 bits)
+// Uses registers instead of SPRAM so video scanout can read simultaneously with CPU
+reg [7:0] palette_regs [0:15];
+initial begin
+	integer i;
+	for (i = 0; i < 16; i = i + 1)
+		palette_regs[i] = 8'd0;
+end
+always_ff @(posedge clk_49m) begin
+	if(cs_palette && ~cpu_RnW)
+		palette_regs[cpu_A[3:0]] <= cpu_Dout;
+end
+wire [7:0] palette_D = palette_regs[cpu_A[3:0]];  // CPU read-back path
 
 //Video RAM (0x0000-0x7FFF, 32KB) - dual port: A=CPU, B=video scanout
 wire [7:0] videoram_D;
 wire [7:0] videoram_vout;
-wire [14:0] vram_rd_addr = {v_cnt[7:0], h_cnt[7:1]}; // y*128 + x/2
+// Apply scroll offset to vertical coordinate (MAME: yscroll applied when effx < 192)
+wire [7:0] scroll_y = (h_cnt[7:0] < 8'd192) ? scroll_reg : 8'd0;
+wire [7:0] eff_y = v_cnt[7:0] + scroll_y;
+wire [14:0] vram_rd_addr = {eff_y, h_cnt[7:1]}; // (y+scroll)*128 + x/2
 
 dpram_dc #(.widthad_a(15)) videoram
 (
@@ -354,36 +352,57 @@ dpram_dc #(.widthad_a(15)) videoram
 
 //--------------------------------------------------------- Main latch ---------------------------------------------------------//
 
-reg nmi_mask = 0;
-reg flip = 0;
-reg cs_soundirq = 0;
-reg pixel_en = 0;
+reg irq_enable = 0;
+reg flip_x = 0;
+reg flip_y = 0;
+reg stars_enable = 0;
+reg sound_mute = 0;
 always_ff @(posedge clk_49m) begin
 	if(!reset) begin
-		nmi_mask <= 0;
-		flip <= 0;
-		cs_soundirq <= 0;
+		irq_enable <= 0;
+		flip_x <= 0;
+		flip_y <= 0;
+		stars_enable <= 0;
+		sound_mute <= 0;
 	end
 	else if(cen_3m) begin
 		if(cs_mainlatch)
-			case(cpu_A[3:1])
-				3'b000: nmi_mask <= cpu_Dout[0];
-				3'b001: flip <= cpu_Dout[0];
-				3'b010: cs_soundirq <= cpu_Dout[0];
-				3'b100: pixel_en <= cpu_Dout[0];
-				default:;
-		endcase
+			case(cpu_A[2:0])
+				3'b000: begin  // IRQ enable (LS259 Q0)
+					irq_enable <= cpu_Dout[0];
+					if(!cpu_Dout[0])
+						n_irq <= 1;  // Clear IRQ when disabled
+				end
+				3'b001: ;  // PAY OUT - unused
+				3'b010: ;  // Coin counter 2
+				3'b011: ;  // Coin counter 1
+				3'b100: stars_enable <= cpu_Dout[0];  // Stars enable (LS259 Q4)
+				3'b101: sound_mute <= cpu_Dout[0];    // Sound mute (LS259 Q5)
+				3'b110: flip_x <= cpu_Dout[0];        // Flip screen X (LS259 Q6)
+				3'b111: flip_y <= cpu_Dout[0];        // Flip screen Y (LS259 Q7)
+			endcase
 	end
 end
 
-//Generate VBlank NMI for MC6809E
-reg n_nmi = 1;
+//Generate VBlank IRQ for MC6809E (every other frame, per MAME)
+reg n_irq = 1;
+reg irq_toggle = 0;
+reg vblank_irq_en_last = 0;
 always_ff @(posedge clk_49m) begin
-	if(cen_6m) begin
-		if(!nmi_mask)
-			n_nmi <= 1;
-		else if(vblank_irq_en)
-			n_nmi <= 0;
+	if(!reset) begin
+		n_irq <= 1;
+		irq_toggle <= 0;
+		vblank_irq_en_last <= 0;
+	end
+	else if(cen_6m) begin
+		vblank_irq_en_last <= vblank_irq_en;
+		// Detect rising edge of vblank_irq_en
+		if(vblank_irq_en && !vblank_irq_en_last) begin
+			irq_toggle <= ~irq_toggle;
+			if(!irq_toggle && irq_enable)
+				n_irq <= 0;  // Assert IRQ every other frame
+		end
+		// IRQ cleared when irq_enable is written to 0 (done in mainlatch above)
 	end
 end
 
@@ -433,9 +452,16 @@ wire hblk = (h_cnt > 140 && h_cnt < 269);
 // Framebuffer pixel extraction: 4-bit packed pixels, 2 per byte
 wire [3:0] pixel_index = h_cnt[0] ? videoram_vout[7:4] : videoram_vout[3:0];
 
-// Direct grayscale mapping from pixel index (palette lookup in later phase)
-assign red   = {pixel_index, 1'b0};
-assign green = {pixel_index, 1'b0};
-assign blue  = {pixel_index, 1'b0};
+// Palette lookup — convert 4-bit pixel index to RGB via palette registers
+// Palette byte format (Galaxian/Konami standard): BBGGGRRR
+//   bits [2:0] = Red   (3 bits, through 1K/470/220 ohm resistors)
+//   bits [5:3] = Green (3 bits, through 1K/470/220 ohm resistors)
+//   bits [7:6] = Blue  (2 bits, through 470/220 ohm resistors)
+wire [7:0] pal_byte = palette_regs[pixel_index];
+
+// Expand to 5-bit per channel for MiSTer output
+assign red   = {pal_byte[2:0], pal_byte[2:1]};                    // 3→5 bits
+assign green = {pal_byte[5:3], pal_byte[5:4]};                    // 3→5 bits
+assign blue  = {pal_byte[7:6], pal_byte[7:6], pal_byte[7]};      // 2→5 bits
 
 endmodule
