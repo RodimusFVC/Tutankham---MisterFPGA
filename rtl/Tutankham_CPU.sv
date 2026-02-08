@@ -380,9 +380,12 @@ end
 reg n_nmi = 1;
 always_ff @(posedge clk_49m) begin
 	if(cen_6m) begin
-		if(!nmi_mask)
-			n_nmi <= 1;
-		else if(vblank_irq_en)
+//		if(!nmi_mask)
+//			n_nmi <= 1;
+//		else if(vblank_irq_en)
+	    // Keep NMI inactive unless we are issuing a one-cycle VBlank pulse.
+		n_nmi <= 1;
+		if(nmi_mask && vblank_irq_en)
 			n_nmi <= 0;
 	end
 end
