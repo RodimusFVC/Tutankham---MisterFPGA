@@ -1,5 +1,5 @@
 Flow report for Arcade-Tutankham
-Sun Feb  8 11:28:13 2026
+Sun Feb  8 12:04:02 2026
 Quartus Prime Version 17.0.0 Build 595 04/25/2017 SJ Lite Edition
 
 
@@ -41,25 +41,25 @@ agreement for further details.
 +-------------------------------------------------------------------------------+
 ; Flow Summary                                                                  ;
 +---------------------------------+---------------------------------------------+
-; Flow Status                     ; Successful - Sun Feb  8 11:28:05 2026       ;
+; Flow Status                     ; Successful - Sun Feb  8 12:04:02 2026       ;
 ; Quartus Prime Version           ; 17.0.0 Build 595 04/25/2017 SJ Lite Edition ;
 ; Revision Name                   ; Arcade-Tutankham                            ;
 ; Top-level Entity Name           ; sys_top                                     ;
 ; Family                          ; Cyclone V                                   ;
 ; Device                          ; 5CSEBA6U23I7                                ;
 ; Timing Models                   ; Final                                       ;
-; Logic utilization (in ALMs)     ; 16,854 / 41,910 ( 40 % )                    ;
-; Total registers                 ; 19412                                       ;
-; Total pins                      ; 145 / 314 ( 46 % )                          ;
+; Logic utilization (in ALMs)     ; N/A                                         ;
+; Total registers                 ; 19474                                       ;
+; Total pins                      ; 145                                         ;
 ; Total virtual pins              ; 0                                           ;
-; Total block memory bits         ; 1,234,354 / 5,662,720 ( 22 % )              ;
-; Total DSP Blocks                ; 70 / 112 ( 63 % )                           ;
+; Total block memory bits         ; 1,234,354                                   ;
+; Total DSP Blocks                ; 70                                          ;
 ; Total HSSI RX PCSs              ; 0                                           ;
 ; Total HSSI PMA RX Deserializers ; 0                                           ;
 ; Total HSSI TX PCSs              ; 0                                           ;
 ; Total HSSI PMA TX Serializers   ; 0                                           ;
-; Total PLLs                      ; 3 / 6 ( 50 % )                              ;
-; Total DLLs                      ; 0 / 4 ( 0 % )                               ;
+; Total PLLs                      ; 3                                           ;
+; Total DLLs                      ; 0                                           ;
 +---------------------------------+---------------------------------------------+
 
 
@@ -68,7 +68,7 @@ agreement for further details.
 +-------------------+---------------------+
 ; Option            ; Setting             ;
 +-------------------+---------------------+
-; Start date & time ; 02/08/2026 11:20:38 ;
+; Start date & time ; 02/08/2026 12:02:46 ;
 ; Main task         ; Compilation         ;
 ; Revision Name     ; Arcade-Tutankham    ;
 +-------------------+---------------------+
@@ -81,7 +81,7 @@ agreement for further details.
 +------------------------------------------------------+----------------------------------------+--------------------+-------------+------------+
 ; ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP                  ; On                                     ; Off                ; --          ; --         ;
 ; AUTO_DELAY_CHAINS_FOR_HIGH_FANOUT_INPUT_PINS         ; On                                     ; Off                ; --          ; --         ;
-; COMPILER_SIGNATURE_ID                                ; 233497588703394.177057123857194        ; --                 ; --          ; --         ;
+; COMPILER_SIGNATURE_ID                                ; 233497588703394.177057376623128        ; --                 ; --          ; --         ;
 ; ECO_OPTIMIZE_TIMING                                  ; On                                     ; Off                ; --          ; --         ;
 ; FINAL_PLACEMENT_OPTIMIZATION                         ; Always                                 ; Automatically      ; --          ; --         ;
 ; FITTER_EFFORT                                        ; Standard Fit                           ; Auto Fit           ; --          ; --         ;
@@ -131,38 +131,29 @@ agreement for further details.
 +------------------------------------------------------+----------------------------------------+--------------------+-------------+------------+
 
 
-+-------------------------------------------------------------------------------------------------------------------------------+
-; Flow Elapsed Time                                                                                                             ;
-+---------------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Module Name               ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
-+---------------------------+--------------+-------------------------+---------------------+------------------------------------+
-; Analysis & Synthesis      ; 00:01:44     ; 2.0                     ; 2539 MB             ; 00:02:48                           ;
-; Fitter                    ; 00:05:20     ; 1.5                     ; 3580 MB             ; 00:17:05                           ;
-; Assembler                 ; 00:00:11     ; 1.0                     ; 1218 MB             ; 00:00:11                           ;
-; TimeQuest Timing Analyzer ; 00:00:06     ; 1.3                     ; 1465 MB             ; 00:00:07                           ;
-; Total                     ; 00:07:21     ; --                      ; --                  ; 00:20:11                           ;
-+---------------------------+--------------+-------------------------+---------------------+------------------------------------+
++--------------------------------------------------------------------------------------------------------------------------+
+; Flow Elapsed Time                                                                                                        ;
++----------------------+--------------+-------------------------+---------------------+------------------------------------+
+; Module Name          ; Elapsed Time ; Average Processors Used ; Peak Virtual Memory ; Total CPU Time (on all processors) ;
++----------------------+--------------+-------------------------+---------------------+------------------------------------+
+; Analysis & Synthesis ; 00:01:12     ; 2.4                     ; 1779 MB             ; 00:02:13                           ;
+; Total                ; 00:01:12     ; --                      ; --                  ; 00:02:13                           ;
++----------------------+--------------+-------------------------+---------------------+------------------------------------+
 
 
-+---------------------------------------------------------------------------------------------------------+
-; Flow OS Summary                                                                                         ;
-+---------------------------+------------------+--------------------+--------------------+----------------+
-; Module Name               ; Machine Hostname ; OS Name            ; OS Version         ; Processor type ;
-+---------------------------+------------------+--------------------+--------------------+----------------+
-; Analysis & Synthesis      ; ManjaroPrime     ; \S{PRETTY_NAME} \r ; \S{PRETTY_NAME} \r ; x86_64         ;
-; Fitter                    ; ManjaroPrime     ; \S{PRETTY_NAME} \r ; \S{PRETTY_NAME} \r ; x86_64         ;
-; Assembler                 ; ManjaroPrime     ; \S{PRETTY_NAME} \r ; \S{PRETTY_NAME} \r ; x86_64         ;
-; TimeQuest Timing Analyzer ; ManjaroPrime     ; \S{PRETTY_NAME} \r ; \S{PRETTY_NAME} \r ; x86_64         ;
-+---------------------------+------------------+--------------------+--------------------+----------------+
++----------------------------------------------------------------------------------------------------+
+; Flow OS Summary                                                                                    ;
++----------------------+------------------+--------------------+--------------------+----------------+
+; Module Name          ; Machine Hostname ; OS Name            ; OS Version         ; Processor type ;
++----------------------+------------------+--------------------+--------------------+----------------+
+; Analysis & Synthesis ; ManjaroPrime     ; \S{PRETTY_NAME} \r ; \S{PRETTY_NAME} \r ; x86_64         ;
++----------------------+------------------+--------------------+--------------------+----------------+
 
 
 ------------
 ; Flow Log ;
 ------------
 quartus_map --read_settings_files=on --write_settings_files=off Arcade-Tutankham -c Arcade-Tutankham
-quartus_fit --read_settings_files=off --write_settings_files=off Arcade-Tutankham -c Arcade-Tutankham
-quartus_asm --read_settings_files=off --write_settings_files=off Arcade-Tutankham -c Arcade-Tutankham
-quartus_sta Arcade-Tutankham -c Arcade-Tutankham
 
 
 
