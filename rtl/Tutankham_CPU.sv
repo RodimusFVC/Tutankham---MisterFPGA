@@ -76,11 +76,11 @@ assign cs_controls_dip1 = cs_dsw1;
 assign cs_dip2 = cs_dsw2;
 
 //Output primary MC6809E address lines A5 and A6 to sound board
-assign cpubrd_A5 = z80_A[5];
-assign cpubrd_A6 = z80_A[6];
+assign cpubrd_A5 = cpu_A[5];
+assign cpubrd_A6 = cpu_A[6];
 
 //Assign CPU board data output to sound board
-assign cpubrd_Dout = z80_Dout;
+assign cpubrd_Dout = cpu_Dout;
 
 //Generate and output chip select for sound command
 assign cs_sounddata = cs_soundcmd;
@@ -110,26 +110,15 @@ wire cen_3m = !div;
 //MC6809E E and Q clock generation from existing div[3:0] counter
 //div rolls over every 16 clocks: E toggles at 49.152MHz/16 = 3.072MHz, E freq = 1.536MHz
 //Q leads E by 90 degrees (4 system clocks)
-
-//MC6809E E and Q clock generation
-//The 6809E on Tutankham runs at 1.536MHz (E/Q are 90-degree shifted phases).
-//From 49.152MHz input, one full E/Q cycle is 32 master clocks.
-reg [4:0] cpu_div = 5'd0;									// Fixes
 reg cpu_E = 0;
 reg cpu_Q = 0;
 always_ff @(posedge clk_49m) begin
 	if(~pause) begin
-//		case(div[3:0])
-//			4'd0:  begin cpu_E <= 1; cpu_Q <= 0; end
-//			4'd4:  begin cpu_E <= 1; cpu_Q <= 1; end
-//			4'd8:  begin cpu_E <= 0; cpu_Q <= 1; end
-//			4'd12: begin cpu_E <= 0; cpu_Q <= 0; end
-		cpu_div <= cpu_div + 5'd1;							// Fixes
-		case(cpu_div)										// Fixes
-			5'd0:  begin cpu_E <= 1; cpu_Q <= 0; end		// Fixes
-			5'd8:  begin cpu_E <= 1; cpu_Q <= 1; end		// Fixes
-			5'd16: begin cpu_E <= 0; cpu_Q <= 1; end		// Fixes
-			5'd24: begin cpu_E <= 0; cpu_Q <= 0; end		// Fixes
+		case(div[3:0])
+			4'd0:  begin cpu_E <= 1; cpu_Q <= 0; end
+			4'd4:  begin cpu_E <= 1; cpu_Q <= 1; end
+			4'd8:  begin cpu_E <= 0; cpu_Q <= 1; end
+			4'd12: begin cpu_E <= 0; cpu_Q <= 0; end
 			default: ;
 		endcase
 	end
@@ -138,14 +127,14 @@ end
 //------------------------------------------------------------ CPUs ------------------------------------------------------------//
 
 //Primary CPU - Motorola MC6809E
-wire [15:0] z80_A;
-wire [7:0] z80_Dout;
+wire [15:0] cpu_A;
+wire [7:0] cpu_Dout;
 wire cpu_RnW;
 mc6809e E3
 (
-	.D(z80_Din),
-	.DOut(z80_Dout),
-	.ADDR(z80_A),
+	.D(cpu_Din),
+	.DOut(cpu_Dout),
+	.ADDR(cpu_A),
 	.RnW(cpu_RnW),
 	.E(cpu_E),
 	.Q(cpu_Q),
@@ -164,27 +153,27 @@ mc6809e E3
 //------------------------------------------------------ Address decoding ------------------------------------------------------//
 
 //Tutankham memory map
-wire n_cs_videoram = ~(z80_A[15] == 1'b0);               // 0x0000-0x7FFF (32KB video RAM)
-wire n_cs_workram  = ~(z80_A[15:11] == 5'b10000);         // 0x8000-0x87FF (2KB work RAM)
-wire n_cs_workram2 = ~(z80_A[15:11] == 5'b10001);         // 0x8800-0x8FFF (2KB work RAM expansion)
-wire n_cs_bankrom  = ~(z80_A[15:12] == 4'b1001);          // 0x9000-0x9FFF (4KB banked ROM window)
-wire n_cs_mainrom  = ~(z80_A[15:13] == 3'b101 |
-                       z80_A[15:13] == 3'b110 |
-                       z80_A[15:13] == 3'b111);            // 0xA000-0xFFFF (24KB main ROM)
+wire n_cs_videoram = ~(cpu_A[15] == 1'b0);               // 0x0000-0x7FFF (32KB video RAM)
+wire n_cs_workram  = ~(cpu_A[15:11] == 5'b10000);         // 0x8000-0x87FF (2KB work RAM)
+wire n_cs_workram2 = ~(cpu_A[15:11] == 5'b10001);         // 0x8800-0x8FFF (2KB work RAM expansion)
+wire n_cs_bankrom  = ~(cpu_A[15:12] == 4'b1001);          // 0x9000-0x9FFF (4KB banked ROM window)
+wire n_cs_mainrom  = ~(cpu_A[15:13] == 3'b101 |
+                       cpu_A[15:13] == 3'b110 |
+                       cpu_A[15:13] == 3'b111);            // 0xA000-0xFFFF (24KB main ROM)
 
 //Tutankham I/O decoding (memory-mapped in 0x8000-0x87FF region)
-wire cs_palette    = (z80_A[15:4] == 12'h800);             // 0x8000-0x800F (palette RAM)
-wire cs_scroll     = (z80_A[15:4] == 12'h810);             // 0x8100-0x810F (scroll register)
-wire cs_watchdog   = (z80_A[15:4] == 12'h812);             // 0x8120 (watchdog)
-wire cs_dsw2       = (z80_A[15:4] == 12'h816);             // 0x8160 (DIP SW2)
-wire cs_in0        = (z80_A[15:4] == 12'h818);             // 0x8180 (IN0: coins, start)
-wire cs_in1        = (z80_A[15:4] == 12'h81A);             // 0x81A0 (IN1: P1 controls)
-wire cs_in2        = (z80_A[15:4] == 12'h81C);             // 0x81C0 (IN2: P2 controls)
-wire cs_dsw1       = (z80_A[15:4] == 12'h81E);             // 0x81E0 (DIP SW1)
-wire cs_mainlatch  = (z80_A[15:3] == 13'h1040) & ~cpu_RnW; // 0x8200-0x8207 (main latch)
-wire cs_banksel_wr = (z80_A[15:8] == 8'h83) & ~cpu_RnW;    // 0x8300 (bank select)
-wire cs_soundon    = (z80_A[15:8] == 8'h86) & ~cpu_RnW;    // 0x8600 (sound enable)
-wire cs_soundcmd   = (z80_A[15:8] == 8'h87) & ~cpu_RnW;    // 0x8700 (sound command)
+wire cs_palette    = (cpu_A[15:4] == 12'h800);             // 0x8000-0x800F (palette RAM)
+wire cs_scroll     = (cpu_A[15:4] == 12'h810);             // 0x8100-0x810F (scroll register)
+wire cs_watchdog   = (cpu_A[15:4] == 12'h812);             // 0x8120 (watchdog)
+wire cs_dsw2       = (cpu_A[15:4] == 12'h816);             // 0x8160 (DIP SW2)
+wire cs_in0        = (cpu_A[15:4] == 12'h818);             // 0x8180 (IN0: coins, start)
+wire cs_in1        = (cpu_A[15:4] == 12'h81A);             // 0x81A0 (IN1: P1 controls)
+wire cs_in2        = (cpu_A[15:4] == 12'h81C);             // 0x81C0 (IN2: P2 controls)
+wire cs_dsw1       = (cpu_A[15:4] == 12'h81E);             // 0x81E0 (DIP SW1)
+wire cs_mainlatch  = (cpu_A[15:3] == 13'h1040) & ~cpu_RnW; // 0x8200-0x8207 (main latch)
+wire cs_banksel_wr = (cpu_A[15:8] == 8'h83) & ~cpu_RnW;    // 0x8300 (bank select)
+wire cs_soundon    = (cpu_A[15:8] == 8'h86) & ~cpu_RnW;    // 0x8600 (sound enable)
+wire cs_soundcmd   = (cpu_A[15:8] == 8'h87) & ~cpu_RnW;    // 0x8700 (sound command)
 
 //ROM bank select register (0x8300)
 reg [3:0] rom_bank = 4'd0;
@@ -192,7 +181,7 @@ always_ff @(posedge clk_49m) begin
 	if(!reset)
 		rom_bank <= 4'd0;
 	else if(cen_3m && cs_banksel_wr)
-		rom_bank <= z80_Dout[3:0];
+		rom_bank <= cpu_Dout[3:0];
 end
 
 //------------------------------------------------------ CPU data input mux ---------------------------------------------------//
@@ -204,7 +193,7 @@ wire [7:0] in0_data  = 8'hFF;          // Coins/start (all inactive for now)
 wire [7:0] in1_data  = 8'hFF;          // P1 controls (all inactive)
 wire [7:0] in2_data  = 8'hFF;          // P2 controls (all inactive)
 
-wire [7:0] z80_Din = ~n_cs_mainrom   ? mainrom_D:
+wire [7:0] cpu_Din = ~n_cs_mainrom   ? mainrom_D:
                      ~n_cs_bankrom   ? bank_rom_D:
                      ~n_cs_workram   ? workram_D:
                      ~n_cs_workram2  ? workram2_D:
@@ -224,30 +213,30 @@ wire [7:0] z80_Din = ~n_cs_mainrom   ? mainrom_D:
 //Main program ROMs (m1.1h through j6.6h, 6x 4KB = 24KB at 0xA000-0xFFFF)
 wire [7:0] rom_m1_D, rom_m2_D, rom_m3_D, rom_m4_D, rom_m5_D, rom_m6_D;
 
-wire [7:0] mainrom_D = (z80_A[15:12] == 4'hA) ? rom_m1_D :
-                       (z80_A[15:12] == 4'hB) ? rom_m2_D :
-                       (z80_A[15:12] == 4'hC) ? rom_m3_D :
-                       (z80_A[15:12] == 4'hD) ? rom_m4_D :
-                       (z80_A[15:12] == 4'hE) ? rom_m5_D :
-                       (z80_A[15:12] == 4'hF) ? rom_m6_D :
+wire [7:0] mainrom_D = (cpu_A[15:12] == 4'hA) ? rom_m1_D :
+                       (cpu_A[15:12] == 4'hB) ? rom_m2_D :
+                       (cpu_A[15:12] == 4'hC) ? rom_m3_D :
+                       (cpu_A[15:12] == 4'hD) ? rom_m4_D :
+                       (cpu_A[15:12] == 4'hE) ? rom_m5_D :
+                       (cpu_A[15:12] == 4'hF) ? rom_m6_D :
                        8'hFF;
 
-eprom_4k rom_m1 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(rom_m1_D),
+eprom_4k rom_m1 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(rom_m1_D),
                  .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                  .CS_DL(rom_m1_cs_i), .WR(ioctl_wr));
-eprom_4k rom_m2 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(rom_m2_D),
+eprom_4k rom_m2 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(rom_m2_D),
                  .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                  .CS_DL(rom_m2_cs_i), .WR(ioctl_wr));
-eprom_4k rom_m3 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(rom_m3_D),
+eprom_4k rom_m3 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(rom_m3_D),
                  .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                  .CS_DL(rom_m3_cs_i), .WR(ioctl_wr));
-eprom_4k rom_m4 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(rom_m4_D),
+eprom_4k rom_m4 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(rom_m4_D),
                  .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                  .CS_DL(rom_m4_cs_i), .WR(ioctl_wr));
-eprom_4k rom_m5 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(rom_m5_D),
+eprom_4k rom_m5 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(rom_m5_D),
                  .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                  .CS_DL(rom_m5_cs_i), .WR(ioctl_wr));
-eprom_4k rom_m6 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(rom_m6_D),
+eprom_4k rom_m6 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(rom_m6_D),
                  .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                  .CS_DL(rom_m6_cs_i), .WR(ioctl_wr));
 
@@ -269,31 +258,31 @@ wire [7:0] bank_rom_D = (rom_bank == 4'd0) ? bank0_D :
                         (rom_bank == 4'd8) ? bank8_D :
                         8'hFF;
 
-eprom_4k bank0 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank0_D),
+eprom_4k bank0 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank0_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank0_cs_i), .WR(ioctl_wr));
-eprom_4k bank1 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank1_D),
+eprom_4k bank1 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank1_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank1_cs_i), .WR(ioctl_wr));
-eprom_4k bank2 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank2_D),
+eprom_4k bank2 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank2_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank2_cs_i), .WR(ioctl_wr));
-eprom_4k bank3 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank3_D),
+eprom_4k bank3 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank3_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank3_cs_i), .WR(ioctl_wr));
-eprom_4k bank4 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank4_D),
+eprom_4k bank4 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank4_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank4_cs_i), .WR(ioctl_wr));
-eprom_4k bank5 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank5_D),
+eprom_4k bank5 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank5_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank5_cs_i), .WR(ioctl_wr));
-eprom_4k bank6 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank6_D),
+eprom_4k bank6 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank6_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank6_cs_i), .WR(ioctl_wr));
-eprom_4k bank7 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank7_D),
+eprom_4k bank7 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank7_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank7_cs_i), .WR(ioctl_wr));
-eprom_4k bank8 (.ADDR(z80_A[11:0]), .CLK(clk_49m), .DATA(bank8_D),
+eprom_4k bank8 (.ADDR(cpu_A[11:0]), .CLK(clk_49m), .DATA(bank8_D),
                 .ADDR_DL(ioctl_addr), .CLK_DL(clk_49m), .DATA_IN(ioctl_data),
                 .CS_DL(bank8_cs_i), .WR(ioctl_wr));
 
@@ -305,8 +294,8 @@ dpram_dc #(.widthad_a(11)) workram
 (
 	.clock_a(clk_49m),
 	.wren_a(~n_cs_workram & ~cpu_RnW),
-	.address_a(z80_A[10:0]),
-	.data_a(z80_Dout),
+	.address_a(cpu_A[10:0]),
+	.data_a(cpu_Dout),
 	.q_a(workram_D),
 
 	.clock_b(clk_49m),
@@ -322,8 +311,8 @@ spram #(8, 11) workram2
 (
 	.clk(clk_49m),
 	.we(~n_cs_workram2 & ~cpu_RnW),
-	.addr(z80_A[10:0]),
-	.data(z80_Dout),
+	.addr(cpu_A[10:0]),
+	.data(cpu_Dout),
 	.q(workram2_D)
 );
 
@@ -331,7 +320,7 @@ spram #(8, 11) workram2
 reg [7:0] scroll_reg = 8'd0;
 always_ff @(posedge clk_49m) begin
 	if(cen_6m && cs_scroll && ~cpu_RnW)
-		scroll_reg <= z80_Dout;
+		scroll_reg <= cpu_Dout;
 end
 
 // Palette RAM (0x8000-0x800F, 16 bytes)
@@ -340,8 +329,8 @@ spram #(8, 4) palette_ram
 (
 	.clk(clk_49m),
 	.we(cs_palette && ~cpu_RnW),
-	.addr(z80_A[3:0]),
-	.data(z80_Dout),
+	.addr(cpu_A[3:0]),
+	.data(cpu_Dout),
 	.q(palette_D)
 );
 
@@ -353,8 +342,8 @@ wire [14:0] vram_rd_addr = {v_cnt[7:0], h_cnt[7:1]}; // y*128 + x/2
 dpram_dc #(.widthad_a(15)) videoram
 (
 	.clock_a(clk_49m),
-	.address_a(z80_A[14:0]),
-	.data_a(z80_Dout),
+	.address_a(cpu_A[14:0]),
+	.data_a(cpu_Dout),
 	.wren_a(~n_cs_videoram & ~cpu_RnW),
 	.q_a(videoram_D),
 
@@ -377,12 +366,11 @@ always_ff @(posedge clk_49m) begin
 	end
 	else if(cen_3m) begin
 		if(cs_mainlatch)
-//			case(z80_A[3:1])
-            case(z80_A[2:0])								// Fixes
-				3'b000: nmi_mask <= z80_Dout[0];
-				3'b001: flip <= z80_Dout[0];
-				3'b010: cs_soundirq <= z80_Dout[0];
-				3'b100: pixel_en <= z80_Dout[0];
+			case(cpu_A[3:1])
+				3'b000: nmi_mask <= cpu_Dout[0];
+				3'b001: flip <= cpu_Dout[0];
+				3'b010: cs_soundirq <= cpu_Dout[0];
+				3'b100: pixel_en <= cpu_Dout[0];
 				default:;
 		endcase
 	end
@@ -392,12 +380,9 @@ end
 reg n_nmi = 1;
 always_ff @(posedge clk_49m) begin
 	if(cen_6m) begin
-//		if(!nmi_mask)
-//			n_nmi <= 1;
-//		else if(vblank_irq_en)
-	    // Keep NMI inactive unless we are issuing a one-cycle VBlank pulse.
-		n_nmi <= 1;
-		if(nmi_mask && vblank_irq_en)
+		if(!nmi_mask)
+			n_nmi <= 1;
+		else if(vblank_irq_en)
 			n_nmi <= 0;
 	end
 end
