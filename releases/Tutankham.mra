@@ -1,6 +1,6 @@
 <misterromdescription>
 	<name>Tutankham</name>
-	<region></region>
+	<region>World</region>
 	<homebrew>no</homebrew>
 	<bootleg>no</bootleg>
 	<version></version>
@@ -14,7 +14,7 @@
 	<setname>tutankhm</setname>
 	<parent>tutankhm</parent>
 	<mameversion>0220</mameversion>
-	<rbf>TutTest1</rbf>
+	<rbf>Tutankham</rbf>
 	<about></about>
 
 	<resolution>15kHz</resolution>
@@ -24,7 +24,7 @@
 	<players>2 (alternating)</players>
 	<joystick>4-way</joystick>
 	<special_controls></special_controls>
-	<num_buttons>2</num_buttons>
+	<num_buttons>3</num_buttons>
 	<button_names></button_names>
 
 	<switches default="00,34">

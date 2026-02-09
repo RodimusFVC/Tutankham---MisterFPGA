@@ -239,7 +239,7 @@ wire [7:0] cpu_Din = cs_palette                              ? palette_D :
                                         controls_dip[3:0]} :
                      cs_in2          ? {1'b1, ~p2_fire_ext[2], ~p2_fire_ext[1], ~p2_fire_ext[0],
                                         controls_dip[3:0]} :
-                     (cs_dsw2 | cs_in0 | cs_dsw1)           ? controls_dip :
+                     (cs_dsw2 | cs_in0 | cs_dsw1)            ? controls_dip :
                      ~n_cs_workram2                          ? workram2_D :
                      ~n_cs_bankrom                           ? bank_rom_D :
                      ~n_cs_mainrom                           ? mainrom_D :

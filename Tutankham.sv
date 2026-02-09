@@ -1,13 +1,13 @@
 //============================================================================
 // 
 //  Port to MiSTer.
-//  Copyright (C) 2021 Sorgelig
+//  Copyright (C) 2026 Rodimus
 //
 //  Tutankham for MiSTer
 //  Based on Time Pilot core, original design Copyright (C) 2017 Dar
-//  Initial port to MiSTer Copyright (C) 2017 Sorgelig
-//  Updated port to MiSTer Copyright (C) 2021 Ace,
-//  Ash Evans (aka ElectronAsh/OzOnE), Artemio Urbina and Kitrinx (aka Rysha)
+//  	Initial port to MiSTer Copyright (C) 2017 Sorgelig
+//  	Updated port to MiSTer Copyright (C) 2021 Ace,
+//  	Ash Evans (aka ElectronAsh/OzOnE), Artemio Urbina and Kitrinx (aka Rysha)
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
 //  copy of this software and associated documentation files (the "Software"),
@@ -214,7 +214,7 @@ assign VIDEO_ARY = status[12] ? ((!ar) ? 12'd14 : 12'd0) : ((!ar) ? 12'd16 : 12'
 
 `include "build_id.v"
 localparam CONF_STR = {
-	"A.TUTANKHAM;;",
+	"TUTANKHAM;;",
 	"ODE,Aspect Ratio,Original,Full screen,[ARC1],[ARC2];",
 	"OC,Orientation,Vert,Horz;",
 	"OFH,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",
