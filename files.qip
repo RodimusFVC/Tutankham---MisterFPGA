@@ -1,6 +1,6 @@
 set_global_assignment -name VHDL_INPUT_VERSION VHDL_2008
 
-set_global_assignment -name SYSTEMVERILOG_FILE Tutankham.sv
+set_global_assignment -name SYSTEMVERILOG_FILE Arcade-Tutankham.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/Tutankham.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/Tutankham_CPU.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/TimePilot_SND.sv
