@@ -4,6 +4,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE Tutankham.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/Tutankham.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/Tutankham_CPU.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/TimePilot_SND.sv
+set_global_assignment -name VHDL_FILE rtl/mc_stars.vhd
 set_global_assignment -name VERILOG_FILE rtl/pause.v
 set_global_assignment -name VERILOG_FILE rtl/hiscore.v
 set_global_assignment -name VERILOG_FILE rtl/jtframe_frac_cen.v

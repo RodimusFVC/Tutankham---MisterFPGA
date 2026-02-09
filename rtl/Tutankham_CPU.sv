@@ -502,7 +502,11 @@ wire hblk = (h_cnt > 140 && h_cnt < 269);
 // Generate a 0-255 pixel X counter synchronized to the visible window
 // Visible pixels: h_cnt 269-511 (243 px), then 128-140 (13 px) = 256 total
 // Use h_cnt offset so pixel 0 aligns with h_cnt=269
-wire [7:0] pix_x = h_cnt[7:0] - 8'd13;  // h_cnt=269 → 269[7:0]=13 → pix_x=0
+// Visible pixels: h_cnt 269-511 (243 px), then 128-140 (13 px) = 256 total
+// Must produce continuous pix_x 0-255 across the wrap at h_cnt 511→128
+// h_cnt 269-511: h_cnt[8]=1 (for 269-511), pix_x = h_cnt - 269
+// h_cnt 128-140: h_cnt[8]=0, pix_x = h_cnt - 128 + 243 = h_cnt + 115
+wire [7:0] pix_x = h_cnt[8] ? (h_cnt[7:0] - 8'd13) : (h_cnt[7:0] + 8'd115);
 
 // Framebuffer pixel extraction: 4-bit packed pixels, 2 per byte
 wire [3:0] pixel_index = eff_x[0] ? videoram_vout[7:4] : videoram_vout[3:0];
