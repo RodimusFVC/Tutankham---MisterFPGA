@@ -511,6 +511,7 @@ MC_STARS stars_gen
 //	.I_256HnX(h256),
 	.I_8HF(pix_x[3] ^ flip_x),
 	.I_256HnX(1'b1),
+//  .I_256HnX(pix_x[7]),
 	.I_1VF(v_cnt[0] ^ flip_y),
 	.I_2V(v_cnt[1]),
 	.I_STARS_ON(stars_enable),

@@ -14,7 +14,7 @@
 	<setname>tutankhm</setname>
 	<parent>tutankhm</parent>
 	<mameversion>0220</mameversion>
-	<rbf>Tutankham</rbf>
+	<rbf>Tutankham_20260209</rbf>
 	<about></about>
 
 	<resolution>15kHz</resolution>
