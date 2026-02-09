@@ -37,6 +37,8 @@ module Tutankham_CPU
 	input  [15:0] dip_sw,
 	input   [2:0] p1_fire_ext,    // {flash_bomb, fire_right, fire_left}
 	input   [2:0] p2_fire_ext,    // {flash_bomb, fire_right, fire_left}
+	input   [3:0] p1_joy,         // {down, up, right, left} active-HIGH
+	input   [3:0] p2_joy,         // {down, up, right, left} active-HIGH
 	output  [7:0] cpubrd_Dout,
 	output        cpubrd_A5, cpubrd_A6,
 	output        cs_sounddata, irq_trigger,
@@ -86,8 +88,16 @@ assign cs_dip2 = cs_dsw2;
 assign cpubrd_A5 = cpu_A[6];
 assign cpubrd_A6 = cpu_A[5];
 
-//Assign CPU board data output to sound board
-assign cpubrd_Dout = cpu_Dout;
+// Latch CPU data when writing sound commands — the data bus changes
+// on the next cycle but sound board needs it held for cen_3m sampling.
+reg [7:0] sound_data_latch = 8'd0;
+always_ff @(posedge clk_49m) begin
+	if(!reset)
+		sound_data_latch <= 8'd0;
+	else if(cs_soundcmd)
+		sound_data_latch <= cpu_Dout;
+end
+assign cpubrd_Dout = sound_data_latch;
 
 // Latch sound command strobe — hold until sound board's cen_3m can sample it
 // The CPU write is brief; the sound board samples on cen_3m which is every 16 clocks.
@@ -236,9 +246,9 @@ wire [7:0] cpu_Din = cs_palette                              ? palette_D :
                      cs_scroll                               ? scroll_reg :
                      cs_watchdog                             ? 8'hFF :
                      cs_in1          ? {1'b1, ~p1_fire_ext[2], ~p1_fire_ext[1], ~p1_fire_ext[0],
-                                        controls_dip[3:0]} :
+                                        ~p1_joy[3], ~p1_joy[2], ~p1_joy[1], ~p1_joy[0]} :
                      cs_in2          ? {1'b1, ~p2_fire_ext[2], ~p2_fire_ext[1], ~p2_fire_ext[0],
-                                        controls_dip[3:0]} :
+                                        ~p2_joy[3], ~p2_joy[2], ~p2_joy[1], ~p2_joy[0]} :
                      (cs_dsw2 | cs_in0 | cs_dsw1)            ? controls_dip :
                      ~n_cs_workram2                          ? workram2_D :
                      ~n_cs_bankrom                           ? bank_rom_D :

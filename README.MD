@@ -10,8 +10,6 @@ The core is currently in a mostly working but not fully complete state.
 
 - Graphics are still somewhat garbled.
 - Background starfield is currently missing.
-- Sound is not working yet.
-- Joystick movement is not working yet.
 
 ### What Should Work
 
@@ -23,5 +21,3 @@ If you are debugging or extending this core, the highest-priority items are:
 
 1. Fix graphics corruption.
 2. Restore background starfield rendering.
-3. Implement/fix audio output path.
-4. Fix joystick input handling.
