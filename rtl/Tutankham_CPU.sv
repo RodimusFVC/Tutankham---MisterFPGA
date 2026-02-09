@@ -494,6 +494,34 @@ k082 F5
 	.v128(v_cnt[7])
 );
 
+//--------------------------------------------------------- Starfield ----------------------------------------------------------//
+
+// MC_STARS expects real clock signals, not narrow clock enables.
+// div[2] = ~6.144 MHz square wave (49.152/8), div[1] = ~12.288 MHz (49.152/4)
+// These have proper 50% duty cycle, matching Moon Cresta's 6/12 MHz clocks.
+
+wire [1:0] star_r, star_g, star_b;
+MC_STARS stars_gen
+(
+	.I_CLK_12M(div[1]),
+	.I_CLK_6M(div[2]),
+	.I_H_FLIP(flip_x),
+	.I_V_SYNC(~video_vsync),
+//	.I_8HF(h_cnt[3] ^ flip_x),
+//	.I_256HnX(h256),
+	.I_8HF(pix_x[3] ^ flip_x),
+	.I_256HnX(1'b1),
+	.I_1VF(v_cnt[0] ^ flip_y),
+	.I_2V(v_cnt[1]),
+	.I_STARS_ON(stars_enable),
+	.I_STARS_OFFn(1'b1),
+	.I_PAUSEn(~pause),
+	.O_R(star_r),
+	.O_G(star_g),
+	.O_B(star_b),
+	.O_NOISE()
+);
+
 //----------------------------------------------------- Final video output -----------------------------------------------------//
 
 //Generate HBlank (active high) while the horizontal counter is between 141 and 268
@@ -521,8 +549,15 @@ wire [7:0] pal_byte = palette_regs[pixel_index];
 // Expand to 5-bit per channel for MiSTer output
 // Blank output during HBlank and VBlank to prevent ghost pixels
 wire active_video = ~hblk & ~vblk;
-assign red   = active_video ? {pal_byte[2:0], pal_byte[2:1]}              : 5'd0;
-assign green = active_video ? {pal_byte[5:3], pal_byte[5:4]}              : 5'd0;
-assign blue  = active_video ? {pal_byte[7:6], pal_byte[7:6], pal_byte[7]} : 5'd0;
+
+wire pixel_is_bg = (pixel_index == 4'd0);
+wire show_stars = active_video & pixel_is_bg & stars_enable;
+
+assign red   = show_stars  ? {star_r, star_r[1], 2'b00}                    :
+               active_video ? {pal_byte[2:0], pal_byte[2:1]}              : 5'd0;
+assign green = show_stars  ? {star_g, star_g[1], 2'b00}                    :
+               active_video ? {pal_byte[5:3], pal_byte[5:4]}              : 5'd0;
+assign blue  = show_stars  ? {star_b, star_b[1], 2'b00}                    :
+               active_video ? {pal_byte[7:6], pal_byte[7:6], pal_byte[7]} : 5'd0;
 
 endmodule
