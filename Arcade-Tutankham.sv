@@ -232,8 +232,8 @@ localparam CONF_STR = {
 	"P2O7A,V Center,0,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-12;",
 	"-;",
 	"R0,Reset;",
-	"J1,Fire,Start P1,Coin,Start P2,Pause;",
-	"jn,B,Start,R,Select,L;",
+	"J1,Fire Left,Fire Right,Flash Bomb,Coin,Start 1P,Start 2P,Pause;",
+	"jn,B,A,X,Select,Start,R,L;",
 	"V,v",`BUILD_DATE
 };
 
@@ -400,26 +400,34 @@ end
 
 //////////////////  Arcade Buttons/Interfaces   ///////////////////////////
 
-//Player 1
+//Player 1 — 4-way movement joystick (D-pad / left stick)
 wire m_up1      = btn_up      | joystick_0[3];
 wire m_down1    = btn_down    | joystick_0[2];
 wire m_left1    = btn_left    | joystick_0[1];
 wire m_right1   = btn_right   | joystick_0[0];
-wire m_fire1    = btn_fire    | joystick_0[4];
 
-//Player 2
-wire m_up2      = btn_up      | joystick_1[3];
-wire m_down2    = btn_down    | joystick_1[2];
-wire m_left2    = btn_left    | joystick_1[1];
-wire m_right2   = btn_right   | joystick_1[0];
-wire m_fire2    = btn_fire    | joystick_1[4];
+//Player 1 — 2-way fire joystick (B=fire left, A=fire right)
+wire m_fire1_l  = btn_fire    | joystick_0[4];   // B button = fire left
+wire m_fire1_r  =               joystick_0[5];   // A button = fire right
+wire m_flash1   =               joystick_0[6];   // X button = flash bomb
+
+//Player 2 — 4-way movement (second controller D-pad)
+wire m_up2      = joystick_1[3];
+wire m_down2    = joystick_1[2];
+wire m_left2    = joystick_1[1];
+wire m_right2   = joystick_1[0];
+
+//Player 2 — 2-way fire
+wire m_fire2_l  = joystick_1[4];
+wire m_fire2_r  = joystick_1[5];
+wire m_flash2   = joystick_1[6];
 
 //Start/coin
-wire m_start1   = btn_1p_start | joy[5];
-wire m_start2   = btn_2p_start | joy[7];
-wire m_coin1    = btn_coin1    | joy[6];
+wire m_start1   = btn_1p_start | joystick_0[8];   // Start button
+wire m_start2   = btn_2p_start | joystick_0[9];   // R shoulder
+wire m_coin1    = btn_coin1    | joystick_0[7];    // Select button
 wire m_coin2    = btn_coin2;
-wire m_pause    = btn_pause    | joy[8];
+wire m_pause    = btn_pause    | joystick_0[10];   // L shoulder (handled by framework)
 
 // PAUSE SYSTEM
 wire pause_cpu;
@@ -498,8 +506,14 @@ Tutankham TUT_inst
 	
 	.p1_joystick({~m_right1, ~m_left1, ~m_down1, ~m_up1}),
 	.p2_joystick({~m_right2, ~m_left2, ~m_down2, ~m_up2}),
-	.p1_fire(~m_fire1),
-	.p2_fire(~m_fire2),
+	.p1_fire(~m_fire1_l),
+	.p2_fire(~m_fire2_l),
+	.m_fire1_l(m_fire1_l),
+	.m_fire1_r(m_fire1_r),
+	.m_flash1(m_flash1),
+	.m_fire2_l(m_fire2_l),
+	.m_fire2_r(m_fire2_r),
+	.m_flash2(m_flash2),
 	
 	.btn_service(~btn_service),
 

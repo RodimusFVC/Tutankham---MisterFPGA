@@ -35,6 +35,8 @@ module Tutankham_CPU
 
 	input   [7:0] controls_dip,
 	input  [15:0] dip_sw,
+	input   [2:0] p1_fire_ext,    // {flash_bomb, fire_right, fire_left}
+	input   [2:0] p2_fire_ext,    // {flash_bomb, fire_right, fire_left}
 	output  [7:0] cpubrd_Dout,
 	output        cpubrd_A5, cpubrd_A6,
 	output        cs_sounddata, irq_trigger,
@@ -72,12 +74,17 @@ assign video_vblank = vblk;
 assign ce_pix = cen_6m;
 
 //Output select lines for player inputs and DIP switches to sound board
-assign cs_controls_dip1 = cs_dsw1;
+assign cs_controls_dip1 = cs_in0 | cs_in1 | cs_in2 | cs_dsw1;
 assign cs_dip2 = cs_dsw2;
 
 //Output primary MC6809E address lines A5 and A6 to sound board
-assign cpubrd_A5 = cpu_A[5];
-assign cpubrd_A6 = cpu_A[6];
+// Swap A5/A6 so the sound board's {A6,A5} mux matches Tutankham's address map:
+// 0x8180 (IN0): A[6:5]=00 → mux 00 = coins/start  ✓
+// 0x81A0 (IN1): A[6:5]=01 → need mux 01 for P1, so swap: output A5=A[6], A6=A[5]
+// 0x81C0 (IN2): A[6:5]=10 → need mux 10 for P2, so swap: output A5=A[6], A6=A[5]
+// 0x81E0 (DSW1): A[6:5]=11 → mux 11 = dip_sw  ✓ (swap doesn't matter for 00/11)
+assign cpubrd_A5 = cpu_A[6];
+assign cpubrd_A6 = cpu_A[5];
 
 //Assign CPU board data output to sound board
 assign cpubrd_Dout = cpu_Dout;
@@ -228,7 +235,11 @@ end
 wire [7:0] cpu_Din = cs_palette                              ? palette_D :
                      cs_scroll                               ? scroll_reg :
                      cs_watchdog                             ? 8'hFF :
-                     (cs_dsw2 | cs_in0 | cs_in1 | cs_in2 | cs_dsw1) ? controls_dip :
+                     cs_in1          ? {1'b1, ~p1_fire_ext[2], ~p1_fire_ext[1], ~p1_fire_ext[0],
+                                        controls_dip[3:0]} :
+                     cs_in2          ? {1'b1, ~p2_fire_ext[2], ~p2_fire_ext[1], ~p2_fire_ext[0],
+                                        controls_dip[3:0]} :
+                     (cs_dsw2 | cs_in0 | cs_dsw1)           ? controls_dip :
                      ~n_cs_workram2                          ? workram2_D :
                      ~n_cs_bankrom                           ? bank_rom_D :
                      ~n_cs_mainrom                           ? mainrom_D :
@@ -494,8 +505,10 @@ wire [3:0] pixel_index = eff_x[0] ? videoram_vout[7:4] : videoram_vout[3:0];
 wire [7:0] pal_byte = palette_regs[pixel_index];
 
 // Expand to 5-bit per channel for MiSTer output
-assign red   = {pal_byte[2:0], pal_byte[2:1]};                    // 3→5 bits
-assign green = {pal_byte[5:3], pal_byte[5:4]};                    // 3→5 bits
-assign blue  = {pal_byte[7:6], pal_byte[7:6], pal_byte[7]};      // 2→5 bits
+// Blank output during HBlank and VBlank to prevent ghost pixels
+wire active_video = ~hblk & ~vblk;
+assign red   = active_video ? {pal_byte[2:0], pal_byte[2:1]}              : 5'd0;
+assign green = active_video ? {pal_byte[5:3], pal_byte[5:4]}              : 5'd0;
+assign blue  = active_video ? {pal_byte[7:6], pal_byte[7:6], pal_byte[7]} : 5'd0;
 
 endmodule

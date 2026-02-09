@@ -33,6 +33,8 @@ module Tutankham
 	input          [3:0] p1_joystick, p2_joystick, //0 = up, 1 = down, 2 = left, 3 = right
 	input                p1_fire,
 	input                p2_fire,
+	input                m_fire1_l, m_fire1_r, m_flash1, // P1: fire left, fire right, flash bomb
+	input                m_fire2_l, m_fire2_r, m_flash2, // P2: fire left, fire right, flash bomb
 	input                btn_service,
 	input         [15:0] dip_sw,
 	output               video_hsync, video_vsync, video_csync,
@@ -118,6 +120,8 @@ Tutankham_CPU main_pcb
 	
 	.controls_dip(controls_dip),
 	.dip_sw(dip_sw),
+	.p1_fire_ext({m_flash1, m_fire1_r, m_fire1_l}),
+	.p2_fire_ext({m_flash2, m_fire2_r, m_fire2_l}),
 	.cpubrd_Dout(cpubrd_D),
 	.cpubrd_A5(A5),
 	.cpubrd_A6(A6),
@@ -165,8 +169,8 @@ TimePilot_SND sound_pcb
 	.start_buttons(start_buttons),
 	.p1_joystick(p1_joystick),
 	.p2_joystick(p2_joystick),
-	.p1_fire(p1_fire),
-	.p2_fire(p2_fire),
+	.p1_fire(~m_fire1_l),
+	.p2_fire(~m_fire2_l),
 	.btn_service(btn_service),
 	
 	.cs_controls_dip1(cs_controls_dip1),
